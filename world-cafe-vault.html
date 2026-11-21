@@ -72,6 +72,19 @@
   .logo-tile.alt { background: #fff; padding: 6px 10px; }
   .logo-tile.ootb { background: #f1efeb; }
   .brand h1 { font-size: 1.45rem; font-weight: 800; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; letter-spacing: -0.01em; }
+  .sync-pill { font-size: 0.72rem; font-weight: 700; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--border); background: var(--pill); color: #334155; cursor: pointer; white-space: nowrap; }
+  .sync-pill.ok { background: var(--spotify-soft); color: var(--spotify-text); border-color: var(--spotify-line); }
+  .sync-pill.busy { background: var(--blue-soft); color: var(--blue); border-color: var(--blue-line); }
+  .sync-pill.warn { background: var(--amber-soft); color: #92400e; border-color: #fcd9a5; }
+  .sync-pill.err { background: var(--yt-soft); color: var(--danger); border-color: var(--yt-line); }
+  .sync-sides { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0 4px; }
+  .sync-sides > div { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; font-size: 0.88rem; }
+  .sync-sides b { display: block; margin-bottom: 4px; }
+  .sync-copies { margin-top: 10px; display: grid; gap: 6px; }
+  .sync-copies .row { justify-content: space-between; border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; font-size: 0.85rem; }
+  #sync-modal .modal-actions { flex-wrap: wrap; }
+  #sync-modal .modal-actions .btn { white-space: normal; text-align: center; }
+  @media (max-width: 520px) { .sync-sides { grid-template-columns: 1fr; } #sync-modal .modal-actions .btn { flex: 1 1 100%; justify-content: center; } }
   .freq-pill { font-size: 0.75rem; font-weight: 600; color: var(--blue); background: var(--blue-soft); border: 1px solid var(--blue-line); padding: 1px 10px; border-radius: 999px; }
   .brand .subtitle { color: var(--muted); font-size: 0.85rem; margin-top: 2px; }
 
@@ -478,7 +491,7 @@
         <span class="logo-tile ootb" title="Out of the Box with Paul Shugrue"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJQAAABkCAYAAABgrhnNAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAEuNSURBVHhedd1n3HVXUffxm2LvikpHUEDpTXq3gYIK9gYKAhaw0m1goSigYAcLCAqCBbBXsAsIQkiANEhIQkgCJARQ0Rfn+XzXvn7nmvs84cU6u60ya+a/ZmbNWnufExdccMHune985+7888/fp/POO29/9Ny543Z+wbqvTPncP/vss3evf/3r170PfOADu0suuWRfxr0LL7xw9653vWt3zjnn7N72tret567VUz51nHXWWbv3ve99K9/FF1+8O+ecc1e9b37zm3eXXnrpKqcuec8888xVh/vvfe97B41bP5yfe+6561w+yfU+33mzX+cvWs55xzkrj7rRgvZ3vOMdix7P1aH997znPavdErouuuii3bvf/e51nMk9SX+iv3yOJ1+fXK5nyjqiNRoc5fOsMrUx608Grnvm+u1vf/vql/PaqK55LuGP/HhyxhlnrHP8QMek8UTgwEQEHoKp5wnlI93D9De84Q2rIYDCcM+mcBPo6aefvggAAs+U9RzQ1A1QdVKHTznllFW3vJdddtm6rx7l1KkejAKQgDEBpI4Yu9G99WH2OR7Ipw/uYRwGKh/j1S+P9tAJTI76i/G1G6MT6jwGhgTR/cBQnp5J6/rCrQ/O4+lhHRJ+BMDuJyv5PVNWn/CwQV2/At0s75is8EeagzWwLkAl9AAQmEoxPGZd0bWG3vSmNy0hfOiDH1oMRsSsR5k0i3OCQIhn7iurTGCs/GmnnbYABXCXX375niHajUF1uLoSmnZ0XmenNsSMAKScc/WpK4DH9Bjofm0muDSU8xhf2wlpapNS9yfwAlX9mYCcwNgGzXlrACWr8k4NtcocabxJR3UtjXw0WOKFsslOSktpQ9n4gcfOJ3bkP1HGHizVfu479w0GmkPT0bnyzjUAUG95y1uWhqJJAmvaTEptOiJ8mkaay/3Ufox561vfunvD69+wTJ+6CRBzoj2hrDbO2/qwvz4Ci7aiNXod5UOnVL8aINoOVK5LMQ99E1SHIzteLWG+a6N3gujiizZhHQIu4VdH1/Upfs3zQ1BNIM7yznsWbzLn6khDVcesU5l4E6iOB+kmhz2g8i0mcAJCjFMpwXRe45LKAIL2+dCHPrT3oy65eCMus5RmUD/QffCDH9xrKnXXpvP/+q//WnncO/XUUxdY5VW/ozoDpevo0J5yrrXj2LUyi7EXvntfB0ZVHh3O8SI/KYEkNPXL8/73v39pzJLraQYDW+fR2z35L7vs/SdpufLO/jmv3lXPe7bn0StP+eSprwFoAgo/Vp5LL1v9wds54NOQ8VB7E9TKbErh7L25bFDLswClIg8yZTUkA63zTd/0Tbvv/d7vXceHP/zhu2/7tm9b6Vu/9Vt3X//1X7970IMetPuGb/iG3X3uc5/d/e53v90rXvGK3X/+53/uHvzgB698nn/jN37j7ru+67t2X/3VX737yq/8yt0DHvCAdf9xj3vc7ru/+7tXXZ4r87Vf+7W7xz72savM7/7u7+4e/ehHr3rVf//733/3F3/xF7sXvehFu4c97GGLrm/5lm9ZZeVX3rkyrr/jO75j0fZTP/VTqz3taPs7v/M7d494xCN23/zN37zKuC/vQx/60FWfMo4PechD1jPXD3zgAxf96pXvB3/wB3c/+ZM/uXvBC16w+/M///Pd8573vN2P/uiPLh6hSxvq/J7v+Z51/dCHbHWrU3nt6zt6HZX79m//9vVMWcl9ZdHu3HP55Y029KhX/u/7vu9bdNEewJaw0360/W1ve9vdz//8z+81c1rXOZnncnzZl33ZqqtBJ6V8mkBl9lJMG6DOOwbUdFRV/OQnP3l3netcZ3eTm9xkd9Ob3nQdP/dzP3d3vetdb6WrXe1quxvf+Ma7a17zmrurXvWqu4/7uI/bPfvZz979zd/8ze5a17rW7trXvvbucz7nc3af9Vmftbvb3e62+7RP+7TdR3/0R+8+9VM/dXf1q199d5vb3GZ385vffNV5oxvdaPf5n//5u3vc4x67ZzzjGbtP+qRPWuW/5mu+ZnfLW95y1f1RH/VRi6H/+I//uIBxi1vcYrWj3Gd+5mfuPu/zPm93l7vcZd1H9yd8wieser/gC75gtfHZn/3Zuxvc4AaLJkf11x/Xyn/6p3/6qg/Nyl33utdd55/xGZ+x+5RP+ZTVZ22iHcCB5kd+5Ed2T33qU9dgUQaf0OCoLjy62c1utp45v/71r7+74Q1vuNp2LZ/n2lfOuef67Rzv5au8OqP7Gte4xqJHn9Rz73vfe/eLv/iLS5OlXQIUf1Q/nv70p69nZPyyl71s8cxATTvChQH8wz/8w3sXIy2lHBDO2d5JgDqPgzfCBeue2dZ737d7whOesDoPALSEjkF4DCEg93Tqyle+8hI47fDv//7vixny6bjnAEXo8hGMsphDMJj4hV/4hbsv+ZIv2f3sz/7sGpXKYBhhyiOv+m9961svxjzmMY9ZzMbECY773ve+izb5P+ZjPmbdw3D1OdeWPhBAwiZIZSRA9xwgXXumbvQCm0GhPuXuec97Lu2Flt/5nd9ZmuJWt7rVagOdztEI1AbOne9853XfdQMI/fonr3YrK3/AdO2Ip8rI7xna0GlA45Uyd73rXdeAzFxNMHAb9NsgfcpTnrI0N4uAN7QfZfDrv/7ru2c+85nr/iMf+cgFqAlMR5qJhuLiNFmBmxPvetex85rJU9j1e9/7vjXyEI1gR8TqlJGC2YjDMARd6UpXWlqKadTIF33RFy1BpxEwAcDk+cRP/MQFLnXc/va3X4Khur/8y798jR6C1wZGOmIaoWpH+rd/+7fd7//+7+/ueMc7LsChjYAJ/Yu/+IsX8wmsNpQHFEAGCLQYyQFH/7RJWPojue+ehH551EdzokH9d7jDHZaWevzjH797/vOfv3viE5+4u/vd777AUUoLBy6pc/fxE70zX9pN39Eor3vq1m5l9RmQ0IY/+krb/MIv/MLeVJFnCaDUqaxyeIJ/+uNIG2sHDdyBNNSsA6iAZ83YzzhzHQPVCTM6D6cvpVBO6Y//+I/vTQFh0VII0imaSQdcI+jEiRO7q1zlKgv9NMhXfdVX7Rmf+nbOdBGKDmAIAPARHvWoRy01S0sRPMYAFMDJR7CBgjb427/92wVagqc5HAFCfgwBApqEYFynfQD6kz/5k9fgwDTtoRM4A4C+6lcDAQ8IjbkDyJh/u9vdbmlEvuCv/uqvrn4we+hOQ8kTTWiRXKtf3Zk0KY3lHK/S3GkpGg7AlAMudTTQ0IQH+MzkcapzpFMYNAveveiFL1q+n0HA93vuc5+7jr/1W7+1/FOD9c/+7M92//Iv/7K7+OJtcpO2yzcDIhMxCai4SyfynTJz+yn3edtMi8nLzmMoRw2DstcYoOOYS0MBlI5y/jiJjXLPMYFQCZ9v4+j6K77iK5bzx+lVNwYRHN+ERsM0wEhbML+Ez4+K2TQc30xZQHHfIAAEZTxPQOpGJ1CjlYNLq2o7XwW9jeJMFBoALVA56r9BxsxzkjnaX/d1X7fq1V8pN0HbnQdcGg6t2tZefqo+A5q8ngfOwAQ0yrjWTwMFTfwjNPPnAKqpf4AgdID5vd/7vd2LX/zidf7bv/3bC0xM3fOf/4LdH/zBH+z+5E/+ZE3Ippab9TiHF2ZvgurE9J2mhgIsgDLyEIgZOeJmOoBSpwkAw/lGktHHtv7ar/3a3uQlIJ0nGJ2nJTwzEyRQYJXn4z/+45fmcQ+IgS71DMh8Me0TXkIESiP0Yz/2YxdT0UjDqR8o0S+pCwhoObQyYWZ5L3nJS9YAIDT9ySnm+Of/uKYJ0B6g0KUdg8HgA05aCsgIPF8IUDJbaR0JoPKfahdIAkumL39KvmhxLM/SoNfYNCg+MMEnxcYu3GZpp5162sqrLTSRR5MO/G0AAax+sTSFILbZ//EyWjNEshZ05qQvQAWkzmWWKUAZ3TpjpBMWDdBMI+dc5zjMhITQv/qrv9r93M/93N75lK8y6tFxfpRnj3j4I1YbzB0w0jQ/9EM/tOokQAxXhvZRD7ChBxg4juw8Mysfrade+QGVYAEYADELGA0E9QAuTaUuvuJznvOcZf7QKC8HW98m8wEa42kq7auXQJl3Tu3Tn/b03Q/8wA8soOuLZwkdGNzLbyI4z/KR0IUWbQJafpJy+a2eO9e/gJqZBAx9NQjRQH7TkZbI+Y//+I/XzM7xj/7oj5Z5o7Foq5e+9KVLQ/HB0MCfXctdF54cac/Jhxegop3M+JbJm2ZPAdcyUXdmAtR3AiFUHeOIQrrOuMZ0QAAoDPjrv/7r3Stf+co9kHJsb3qTzaTotPwY8hM/8RO7G1z/Bss/oKXc/+mf/um9WSWMnHTXBGBEaRsN/IA73+nOK8+d7nSnBSoOPq1B6wCdFDi0o119QS/zqz+YB1j6C9yZoWZWadd8Ke3kzAMKjUoz8keAS/gjMGSmApZ6nasXLZnuaOx5bkWmf/qv7uejZS3KY9ZJ6GSadnFNzi984Qs3P+pFL1oJ/5i93/iN31hH98Sp8EA8UAA2v9okbvpR7hVtZ/6WhsrMOcosg2NxKIQ2xddhIyGQ6RiGus/c8KOud93rrWnn6173usXItJhyOaKEIz8m/8qv/MpiEr/IqOC0Mx35Zzn12m/GSUsAD6EJKmqD9qSBMq8CrOpHJ8FkUvKr3ONHoVkekwLTZFqNGa0cwaLbgAIomgmgAUqb7nl+r3vdawGYdiUIzrk+KI8OoAtY6IimBmQDJjpzJ9JKAbHy+pE/BlRA6ZlEbmSYVklZvPGNb1z9wk88a+LS7Fe/8BfP1ccXbsUh6wWYc42v6ABQnbjg/C0qnpOV6XPOBtMeGucIYwbmIMAox7BiHwgjHCDBcLNDxCOK8BCvnLowwD0gxRDqFYPc0xl51cnkAIfOeaa8RDsAEyYCHkBm/9WjDgziWBIGJmVK0KmuNIP60MxM6hvNKCjLdyJgAJYvP4UJ1j/8kLTjGs36wh8Dpl/+5V9e5/VLn299q1uvQZPPlAbMX5uDJy3UxEJ+R2Ax6KItc6we9wLvk570pD0QZkCS0MWazEjN8tDpmnsiduU+B53DTuPAQOBZDvkFx6EDaQbEF6DSUFLTy9CMIGaAEAg/1Q/hzIUwv3Od0VmC/Y//+I+FaoRYi8tua7BYhTYK38srMlu03j3tn3LKtv8JkfZE9cx10XzLO9YKMct9dUvtXNCOTq/1yfO2Ns8999jEl6wTCsS+/extVwIVz9xHZ/kahfoxZzfOWwON0db29P2Qv56pqxF/3tGerOnL1lbrnpU3C7vhDbdgKMBl/oAq/9TAMdgFLPOhLLZPUF3+/svXYCtcwDUBGmbQxOLHfuzHdk972tPWTPHlL3/54sWcLU4fyrU+ROt+P1SCzu46z4eiJYyGbDxNQEsIQmaajFAayY4AwlTWArHgaCpXOxGSbZeXEHWofPJw8C666OKTmE+Q2e/C/jPWIhG4+wRauUZqaZoCbWGE7TE28aEboKSYeGg61KkdwM0ZnYBRx1rIfc+2uBuwansKZKbuR2fOdG3bF0ajGtjNxPJjA1TmkqYtUj4TupjkQjOFGsTSaFz+JG3NnNOs1kvxIr5HTwNn4gUPTrSnJs00E2FBag4hUBkBiNGgDnHo3KPFxC2M9gWSi7cV/jbEJYwpHMeEgfGH7XsWobMzrgPXXBbQbpMJWi81neaIhkmHcmkeg8E5BtoF0SKpfG3P2M43R7QpMzpbJFWfctEQoBJooKk/U9gTPNFpUJXXgCXk/D+gMsADlXv5YVwONERz9aKXghASYNZoKnmvfa1rryAvv9M9fqnA8fKhLt5CD/GtY4rAdUrpxCTeeeByjiGcO2CB/OIxzBw0QziTyBcwctpgJ2mwLRo6Vv0R07n2CKYFSfddE4R60kaNkkzQJowL90xzn+lxrmxbOwKE/Uh1fgpQX+V3pAHEXVzTrmgKdKVot/45p8sAhamea2duSZnad0/PFTjM1b/d356V37NT3nTK8uFueYtbLjkUluBfAZJ7QEZD8aGsxR62o3/8TRMIM7lf+qVfWjskyM8slT/1rGc9a4VQmNi//Mu/3PPzkN62MC1+HPlRy4eagMIY53b6NcujoTiSkI9oGoozClhmRabkUE8gRgAApHXaI5RwM2G1mcmVx3EzdTZ0XbIHNz+FgKNPXs+mym0ZgAC161ltzHwXHm2jdQ8DCvypW9u0gDbX/qbLgPg4Sjw1ijxpqUxfZk++fDEaGj3Kb+0fbwycwpnnASvZ9NyAbSkLaICHQ17IoJiVxA+aJq+6WBDya8Ze0JnSaOGbv9xM2c6OaWWmpqqfDZgFqDqiwZhUh2TkpDVNTa0CErt74xvdeO3HgXagg/5pBtSzRur7tohtbTVqQr125PcM8yPQs+IbAOXYFuAY3mYwbTp6nqlK+2jHeYxJwDmbG4A308KPOuP0zQe0ke9Qq23p/9ew555zvPNR3era+1JH7air9hvdCWTSIE1toE7JgM3k5YiTB1AAmfMtpnX75ZQbeNqbA0F9TPtrX/vatcBura70D//wD7tXvepV6+jaBMticspgyi751AfneLCPlGPM9AMSNE9fbAfxnHF+FEBBsNlEuw90SuPqafOVunRq7vyLCAD40z/90xWZdaTVerlhjoaAyd4LyFmwFMntRQcgFpCjuv/+7/9+pdr2nBC0ISYmaPeyl75s+X0iwzbviRa7b+lFvdYH1akf+VHqip5Gpv4QcrMlwUAaJOYGnHZROhKWfKbrLcyiwewKPeiUADThTSAXQyqo2SCfsazCDTb+fSRAua9NZjGa+Uu0msCuJFzEncGbVc+Rpg4rE1zTAuwBJelIBHioIbaUaqUS23BGVRoNzKBr2kkCKGVpufbJqGM65wRul6d4TAu4VOyXfumXriksYSYsAgEcoBDjwSh+Q3EW+Sy78OXQx6kU6KQ13/e+SxdAgdB96hu9+R5Gue0rlnEIwv3b3fZ2y4QDca96Yebh6PT8+7//+1d+/Ua/pC9mS4DDkVX+PUfbdSXLS/ilH4EirV/AUj/1NxBM+ZiJAlTAKfip3Zxx9ajbLC9ATWCiyRabYnB8JPk45sxp8TU8xSPP8XniAqBKKYm079pgV2o2JYNrmQS8CADj2N4ChEWbAxgCzQgiPNOXqeGPGJ1pM0dlWsx96lOeunwxsw8M1T5A0ZpUsGUU7QE3YBhF6LMRz5ocR7MdBdb1xMD+53/+Zy2Sagf9tdkAsU5JOASiHOFag1MvQNG0U7NiGE2qHeXyPzDfQrcpN99SW9bK0C+pQ9I/QcmpUeIfGrQPEExNIJjyEXcTtNWHfCDyKM3gpnBPE5ZS9AOlgUQeZESDCi4bDLav0Epm99rA5+pJS0n5vmmrFp9PmuWl2p2HZqoTEzAconUaI4s4p6V0khByqtVVTKhrmiP7b2SpE6CUf+5zn7fiWuq3AzK/Qx1Giag84bWQCgwEb7+2uAlzDDA0H3X93//93wtU4mSc1DSBGSkA2xEgGk6QLQ0RiOh2AVXacgoUPWgsMq1O5WluQAIqycBzn/Aye/pjWYZWvOlNN60SiJv2A4J6mef8lrSCc4Bq54f86HY8BBj+0Dj5rYHJOQCRI7/3N3/zN/dbWczo7KHiPrivPBkLXueTBvLMXsFM19G4APWRQIUJZnk6gAE6k83GhEaYDkE9k6dRHVFeowBF8D/zMz+zCG3BU1In4SL6gQ944O5ud73bYgptw7Y3EkRyCSL/QZtW08VoAIqGIAiaw6o/08n/4aBbnyvCT9Ma4ZLF0+I4BKNeNAF9DKRx3/H249emOKr6zVS3hoYW9QGSpSfrkEwGYVjWyH9UJzNt8bsNgyV8yGwBQxpKqGNaDCaPWUKnvNpQLvPpfvXRLBNQydc9A44cDNDWRdXr2KI3ueApvy0wzgQna7Jw7hbRb4a7B9QEVedGlsZ1slHciCjk30hDmClpM5VsrJFOsBhpawgNQKspQ1vxeahZDj5BuW/E2zCPjiYGVvF1EtMAG1A84/OgQXmmjskSX+k1LlszaDOxFjRYd7NxDx2Eoj9AyBeTOMotVRjNUoPLjLf1QMf8ljYcZvaYYLRarZ8TDUJGo3XIm910W/hlZgwOGwwNLL5Z8TT9nw4vQBH6HMgTmGkpfEVrgGpwp0nQwynHV6bNYLeP3xHoaSc+GDClKQNlPpk0tVTyPglQE1QxERMQGAN1opTKN2qpeYDKeduPivMvWPEYuxOU4XwzG4SAaERYClAXjQG4RgtnGmCAmh8EbISkLc8JAMM8AyaCYSqZFTM+IK4fTBgahASAEYDbBSmZRheAjVkYmR/oGh1eY2rantkHEKbNjk30ARVA0VY0EUDlsHo9ygCw5ZnWxDML0ZnEfK7kkKlCi2smD6AKE9AgBjsgpfUDFldl1hWo9ImPhAfMm+TcQHJk+vDPsdmusque848Ds93Ll8r0LUCVwTEUO+okxCI0AGX3C6Bly3WUwKovNemc2l+j8ij4Zncl/wXR8gmetasg06pzAEPQ/CCajDpm/wHKSMYwowlICcqGOjM6zwAqH0xf5GVGAdn7cephRoVExGMSmpRWKNDqHChpkGmy0UsjotNIp6Xzp/h1zKK+A5R60WhFH/DxDqBsROx5WmkvwBHodExDNcAngICMjNxnAVocTpZbfVtwlOuA1nZv4KfBgR6Dgslu86D8k67qSrb5UwFvr6EqNNFn5CAMgflOBK5h95gKI1wnJbOzGEAoCQlTCY4wJOeYbXeCPL0ylUnVjtgOhgAUQWIiQMnn3NQXfcybGSBfiqNto5y9TIUpdNRsTT0EYksMUNEkNCUA2mkgL+ZEe2amUIr6AEJ/CbKZruWKzDIhoC/nHI/SEhINpa9MrgFCiCYcmZX4zneaAoyX6G97DzDnNjTIcz9YkjTUGiTnH7syBgmf1Jqd+J+4nmTtztHuArE5wNdHtM4NdiV0pXwKvK5I+b4TA1CdG5WCXZDfjkJaBoqNRJqDKdNBSE9DZfYSjNetCZsgMMCRyuc8e47J7WjAGIz2TAxHZ/gYxXscAY6PAFBmJvwhWo+fZZZntyQAJMi3vuWt69qkwYwVo5il3lYWzAz89V+y/ASQzvECoGjYBgbhAQkNxf8AJjTyo5g8fQS2fAxgX28QP/ShC4j6SkNN8CSPgGC7jWv1GLC0Bv5o27G4VPGntCefEV1T8Pk8AAM4gQfAHKU//MM/XCEPisSAMThbgN/oOp7ltTfKvUzfHlCp1ZjqPB8K8fyBYijAg2FGO+EZEcwUQKUSA5T6gEK+gnA5lQEKgzGfGdAWJnnBARN1hrOsTSAGSNqNAAHKQiZTR1ii9jQIPwqA6gs/CC2cXX0gSEK3NYNJf9WrXn3SQHKMH4txR99hoAXbZJi5yeRxaoEJqJg7CS2ZXUkfBXW1yeTrB18QH/gyb37zqXsaFh+PBOUcL/iozfKAp0h5mr2ZHh6SW9qxOiRajqYvZkaTRi+ZurYF2wuyeM6/1PYe5GNnQSANYAtQEwAWQm1niZmZvFSsWUvgMcJpA2EFjHJPhxNAalr9QMFvMIrykwKUvPZ/Yw5AEJiRYeegjgB1JpHAMIzJ5LOo11Zj5oOPpiwhAxgfCi2BuoVcTAdKDKQ1aWCB02l2AlSDrT6YWQJBWgBftIVOAWAag0mywJqGUh6QJc9MHmg6ExKgQm+LtfzG2k2rJDT1GLD40C5Z9RcSKYwDXFKzPN/CSsaBwXJPLyVY0jIT7p4lKMtCJkUtb5n14skhTXtNNcIIa4NdAFLItowNXNviKU3QLI7vQYtgnFgFUDA3OZg6nECWyTgSEmFwnI1YZSSdBxr5RJAxRhypKXkOO1AzTc2qmFh1WWfyjGACUzEqdr/gpD6giXOtLfnUQ+jqMTsrkJgwi/9gUrzQFvOo/gKQzoESoPI5mG6a1EiXz27Gwg851AYXAJrdGhxNdggxGg6FJuEvPgMULR4d6iysox68AigaKo1XInTAsW4JTIDk2D1HMz5hBbPBtYx0tCNjAmqCad47yeTRUNl7DOX70EA6rBMR3I5NDC0EEKAa3R3Vw+TxwRpV+WLMmva9GEnbteisPaMVQwCC4wyMzC4tKZ5EcxZ4Vae6aQ35CF5ZfdF2AkGLpR0aEv1AbWJgejwB1fne9F2wDQphg0xMvAAoDKcp8SM69MVAAygj3SoC35Pg9cMgYe5oKSAHCpqhQZhGkAocmnEFPvxWV2uc2nbtPkC1wS75dhR6APjW65g957SnaysXrA+TR4vTwHDQAMvUBfjOS/uwgcztFWo0i6EgLPSnUnsvDeE0BlOFiQnGiF3COFrf4X8AHRDpvHNHMznPaSgg06mixgBFKwAGQBGCt1GMaOcxjPM5p/JiUnwdNOiTtudIsoalDzQU4dCStAc6fABMnjT2xpvtHKBMQjJ5AAA0/EhtPfOZz1rAkAp9OFcWoEwItOk+PjDTzDY/rkVymmECKprRD1QARRba5t8oo+8GkUEFVMlpRsonAGhtC/69nCDm9KhHPmoNZNbGILeuR4PKZ+bXAFMesKcJnVrrCgB1vIDo2loYwelAcSejA8KNNqPBiKc1dAzTMFdHFmMu2DZdEWoOfTM8wkS8fISSo14eyzTqIUgzIvXf737333+qJ6dTYFM5Zsx9QcO5/qQ8JqBL+AAgCYXJ1h/Ta/31/FCzAtN23Mw/4WsrhxyggF0eTjmheJZZRGv8tIxDE2gXqPDD+qSZ1T//8z+vbSsGZEBOLgnNbI+DXNhEH4o94Se5tL4ozVne1CZ4oT2m7J/+6Z/WDJf7oF5lxOQk9//1X/91aTR0BPC05qLxaMY3AbsANUcw5ui8jBZYvRJkpIn1NALEW6xZYY5nBE4rcHoTjLoQAVA0Hc2QMJrJ0VA63etGTX3ly0Flsmgw95hFfpY2txG4fXshzUdIntMktJv2A5a6AIqggQ8DlWNyDAT5lpYanxOcmkJ9+pjJadqOdmXEoQgYf9IcFmC9qEAD4mnrffgHFAVVgT6TMtuciYxsijOY01LaAk7nxaCAC49NNvB2ag91CD0oj/+0nEFAMShrkBSewR/PzGINJvwIPIFqnpcWoJwEAkcMdv7hD394xYA4uYStA4SgQYBqcVEMSDylBhpZUgwijASvA5hqlqfTwgYEQGPkD/FtApRZoLY954DTiDQnEFinU4bZADimBKASklhWIyxANboxnhntbZfM9Uk+1JHJAyi80Nb0W4QolGG+XAMcwegDcKOfmQlQLR7jHSCYYdraE6AP+ZbGdG3KD1DAkw/nPHClOdF2CKgUBlrwNrPnnBxYhJZk+IOee2YD4eLHkTs0gTQVUX7qCQRTg40Qx1Tv//7v/y7CqG7AQTD/BRiMDNdNj//u7/5uCUUd6lNeh9JSItuEmangDPJflDHKCSlnPf9KWdN/gNIWQPG/aLtmeRav3eM7MXeEyJEEKIIOIDrNNywsQRg0msFi1GamA1Uzm4TJbNuhcIc73HFv1tA6nXIaC+36B1j3uPs99vEwfhQn1/cfxICKqlvLQ6u+xC/5A5O2o4MPlZ8JQIAkFTJIUzlnvnLKp+Al/aMZBTYBbPKJKSQX4Cp+p2ymf4KnNEF2QjTYRYyLcJ2zQY3A8g0IozU3gtMpzMFYI13Zwv0aSjjuAaVONoI4qH3n0S4EoORcpqnSUMyloKh7nskHCEwe4D7+8dued7SZHHjGr6EZJkDQxCTny6nr3ve695rC8xMy1YdaKq1hXzzfrNiPPuOJGSrGA1szrEyifvV+oDgUDWX2JHCY6aPZCR6gApX8aajO0WD1/1rX2j4qBrAFN2sPoDJdxaE2QR+bPf0yWJWTv92h/Dwa2D10mXjR+q95zWtOGlhA06zT+fSjFqACQAV0gmolEE45welAX2AxCgmPpsJAjLHIyowwlS2GxggdUBchAEk2HtEPetCDF0NjDtDoqCQ+orx9Tfw45qxXt+WjpQQIrfY3VaflzDqFDbSpL4FK/2gogNIWQDGfYlFFgwPUBFNCJfRe2AB8NNJSzkXp0aTeNIc+Mc2tgzG3JjJ9J9TUnA9qmw7BFyJxzO8jl0NA0WraLek3rQTImdsApU/5NjnlBhUNyjWwiI4n4nD8PfJ0pKG4FPIx6fmjU0MVXppg2gMqv6cCRqw3PggTYX1HAPGNTEmDgCH6C83QrhMISEUmDH4S88CXwgh+GCBapATGZiuZRTMRZY1wdjywERhQ00ZMXB9Aq6yjoJx+TXCgC/NufrMtFmZA0JoAaENb+VP/E1CNbPvh873QSID5MDnkntESnhUrw1+CZK6ASKwnXyofJU0eqIQw4l80sBzF6bSrreJizZID2NRQgUBd4mFkZsYqJCCAbEBy0K0E0LZALpwAvPKhKVAHnsxddQeu5UMdpy2wiXDmjrlhpnqhMHWP8EwX4uw6cI+GogoxJO3QUZ3qEbwDUMyl6QAqJ1YbwCFYGgh0hjBoH9oAAwXg+FX8JpqrfU3okfIL8knSPPlQ2kADMAFlkXJJmQA1hZkW7/tS2tm05fZluQZZ03YA6x0/CU3AQHDMPQ0FUPq/TMeRNg9U0R4NjpvJu9berAWkUj6UAWqyoo6pRSR94zcalPjYchZnnOzwCP9pU3UJH0xzZ8F61he4lF1LLzIqEMOoZigWMqCuOeWAEBMxz7lOOUe8aX2Lw4EzAUnaEDHmSHMECSUH1rZaQlVfwLCdBKGTwbRI+8nbdal99RTFB/bedG1UTUABpvoBChBpOVpS3YFJ2RzyaW4kdZmwFN5omt4yTNoKPcXY2pSmbbySh3/CnzIxASjPCGMNoouOHeS0ZDwEqNb9muUBr7bxoUg5GsTnNqf85FiRc/Vzuk2GLF3x7wIE4KOdq4Mvh4Cc52mn1kmltTjcCNCQ6a1KmTz+kNkZP6NpO0bm85RydAEqpzJmTLOBWdnrXngwOxQLwogZE9I55ZrOq9cztt/o51dpkwkhINqGqUbzVmYzGZtgNuEYLGg1QJoZMntoWmbm4B+YEmSz1gCKDrSiA8DxRV/0AT+YDPmUi/FGPqErQ+DtIbN1hCA8J4sFqgMaAvcb3/imVUfmHZAKtTgPZK5ZFmVzng8Boc7MvOs2Ik6NCCjdn2Udpeo+CVBVrmId4QepsP9roaE4l5iAeXylfAjXbTjTUbsN1JMg1ZfGiikJzmiz2g0EEtudqk9jKld+9zyTjCiq2GzlJS9+ydKozZISxtSU1afzPgEo5mKZg/ml0TBGvdo/1A7qaJQ2GtWlL2i2SU0cx4o97RUoY3hl1fnKV7xy0VwcCA3ACUyEkfCUjw/RUF9E1O0BK47kaGFapN6s2bJJIRdpAqGU76MPq1/v3JZkpjZKY6GrWaJ88cAzx5XOOTr2bYMEbySvby5dcslyhsVHaCiOr9FnNDA7LfIClJHOL+HA0VBTGMf1nrzhrhGgbW0AbgyY5iZAzTpbH5xT7YB0CIbDNL8IIzHpyq5nA1DR2HGOyoASADzL70pIHSsfGGsj2uVRB0D1tvUmwGNQNTjSkPjhJdbZ99I01+oN0IFoAmE+D0hSfHceSLpfPYGtflW3Otc3NhHgIeJpDswm6ADVK0w0Ed8DkFK5AEbV9tbLRxJoGssx5iACE7QT88uHeOcxaF/vEaC6jvETUDGlfTyuV11Hf2RU+UlT2q9650CovgZB9POPYqZjILoiAE4hVMcURCnTIU/8aLAl1H37RxpntjsFPNuczyo381SPvOjwTLCWRowflS/N/uw1lK+2NbVVECi2D4VtH3qweMqJpp3Yfz6I82Y2TGCzttNO2z6sEAEElDCcA09CiunyF2bo2Sy/3T+uUwoEE0QBpboPgTNHe99cOgbjBtrq6j/mai+wJOCeaSfgOZ+jNiFNIJSuCGwJJH8qzVCb2ghIgfGKAKZc96Ktc/1L48eT6HXULi3pmsY0uRC4bYJT3kA5QRbdJ6Cxz/chRkVd01RiKbRSMxtHJi5nsEAjLXXqqds3rZXtw/k1mvACRqNqapg6mkDLf0VlJlgOhTy1TUytTIztuvZnPeVzvjHyeHrcwFt5jv4DL2H2PIZHy6HDn3ACVNrJecIJGPJMcMSHQ6DWpjwBbJYrqc8is4mIWZxZtlm1iLhr9yUBZ26O8IwBP/vW+RwQ7i2T5yQfRkcQ5RoxaSgAYuaa1bluD05HKadUXRpJUBrG1D5JHLrbHnISmIZQE/gEUyArT+WnNsSA2nZvgrn71StNx38CarV7wclCOx6hxyYroSfM+uhZuzXx1jP1b5r6eFttmilTk8Zy77i9Y20YWKJrCvdQi0jlVSfQWGAWBytZY5zXvawqTmU2i1711tYVtVk6oZEWMBGhcSoO8QAlTpF5A6rAA1T8J1NwR/7U3PnYNtpAkfPtqP4c4+4DwXSYEzB6Nkd0e84hrQ7PAMSfCba7gHZ1L+a7J2+TjNlG9XDOPc9Bn4CeQFJvM9HOc+QDaIIMlGjEaGBhTlgAeXIpmlCUj4CYjvwp99BTm5L8CVU7+LMc8vHpwk3LbcDUJlBbryOj3pIWqxJvImOWyMsTkl2wll6cm4k3y0Nj2mlqpoDrfAFKx0IxJuiA80svvWxpKAAKUG3F5UsViGT2hBH6OFXCKIk/CesL41sbssfGFhOv6EjW5PpDROtwnvdOPQbaOK/zvigirzWoYj2vfvWr175wW2of8+jHLAYIzOmT5wRHpauf+ha/sgT0zGc8cy0DoUmAz/5uYQT5p5ZM0OgwJbd2KJDr7RUbAyX7wfQPnYCQ5qqeeJswCLiP46sHDWhuH1oCci60gF6092eRyqoLfcIe8c0WZUtc9mZp91CDBIg5s3Sc6dCHyxeMLuUPzVzv/S1A+Yn5AarR7b44VNtKMn1pKJqr2Z7j1FClwBn4SgCZhpvLJ+1rAhTlaQ9RcbEws03BSO23BRjzBErFyaxLWQbiSPZtA3kIOrot5Mpr/VEfmPBCH0Zpmi4Nufhy/vadh77LPncV8B1bOWgXgMVVfV5MH7Eb9XnWzgBLMe2LUq9EY0wwiDX1+pg2Je2pn5Y1+NAjSCpYrJ8GHfoDkhSYyYhy0Ja6Wqqp/ZJ7eC7GpKwEkJnl7gWs+npCwznP80u3E1CAg+ltLQEEx1bcEUhLHQKqc1/owBDl+nJJf9MViAArM0rb2SeENoDCNLEwSzTAA4wtftrYpuMi6LaLmJHSGn2kQl/8TQiQSkY6Ror+o1l+7eoHMwCA/Yl2vCAIgAJGYJg7JltyEVbpvtQbLAlUffZpEzqBAZ5gcOtv7SK1tmabjDIEJ2irjLYSNoAxX2iyubElF/kcLWJH9zSlNJJYYfvGrNkZgPqFh+7bxYGP5IAmAzdwqiv/Lg02NZZ7J6A8wUN9YFAYwX0fKucbkAiiXQdpL4zO5FVfRw3pdEsd6gFQQCJMnVOvc0JXV6/vAAbzqKPW3pRHT4uf7Lw3hgESODxjAgDRc0evgtnXBYxM42wHDZZt9I/Z8l312YdUucHVP5pe//qbpmjnQ4JuxLd4S+jKqqOttwTe1+7kU8Z99UhtzbWlRlnCBBr3PNOO5SZmHED0pSUX2k7/046Zu72mPfKtyAmwSkJFlIHUNVNq8ZpJxsep6Zo4HAJqmTyMCkhAlHbK/+i9tzQIIBA+hgFG2spIa5bX6E4oCFI2AMmvTkkd7XUqDKHuXg8HKADBqP4HTx1PfMITlwYCFOYLHZ6ri4nsYxmO/A7LEvKYtRgAQEyQzo1SQOFn4QefbwIKAw0ugMo8MTFib45W5gNUJhFoLPziKZ5YLpHfMwk40kppqMoDiIHcYLQTwA6FQKeM/vheKBBlooDOQMP7TFLOfQAAJpoo9wG/yMFAxT+Dqz9XQm8v46ahppmbaa+hmmEgYgLKOeYa3ZkpQs/f0In8HffavpKGKzXavWHBkcZkJgnROtK2FdrFsz68jkBABAiC1o4y2gICmgmgRPLV12wTTTRaOzaV5/RqR+S3AcCx5ltZnLWvW5viM8rMWVtqXlvMbj4PQDA9gMmhzxTmFwFN37nER2YbGDwrH1r1w7FymcG+maBtgGg3gTxADBDMPjoI3n0y0B90Tw0y41w0EJNG69E+zJ66AElfaHHX+moipI5z3rH5TbO+qZUC1IpDTQCZ6m9+w6ahMMLMKq3gyDQAQDsOaA5EYCgNdRKYjnwRqaktEwuk+VGEixG0RFN+wmyKDBgAkjkDLJqsP8fh99Ac/V+e+vq2QRqOKWMmaAl0AhdmpT2buscHdIqmd83ZpK0xmQDTMATLAcZQE4E+N+Q5AQM7HvaiBUAoRxPJR7tqxyzVAM3kOTezQ0dgZqoDJA3VZr4AJQHCoeZYM7Sj/2IJBKVDRZJZZErNsl/72tctUw1Q0xmfQdhDUO0B1QzPMRBghj1MQJRmmBvtWiSmLnVufnCsOg6TOJLZlLJpPYBqu+xh2WZ5RlD+EzoICxhoB5rOSDPynMsPSGkob+ga9UypqTeaOb4Yqb200WL+WJiN2e4BHdM6fSeg8N0FeYQOACrTQ9BmbOiX+nfSqaF6kaD/XsmkSb38QFDap0EDbG1nQgHQtTBI/s50nLs3wwLFpoQqRMa9HyjkQosDP5mg0Qsf+LgCr+/YQiJT+01AmQ2fkDl/J+ZtI3RbY6Oh2NYccSl/quWYnHXqlIAC6SGYCEqdAmfKFdNS3uj3L0nKYsAElLgTGgCGhgLqZnk0FDABnNRrVJdfvgEqDYVB/BoDBN3iNvk3adL675736fIt3TO4ACqTBBQEamM/mgG199kSNNBPQBUqSMvpg3aAuzexgYNP1VddptC0nQ8WsDKvygGdPjSRyAyhX/8czz7r7KXdtcmXMjjSnPl+ju2JF+ZQJ0AVtwpMjoemb6+hUu9CBwk0p5zwASYANL1Pw9BO8lyRhspJlzIvNJQyxZSY0t4QOQRhYQNTWwzInwMII4yG4HSjq3VFPpX98PqmTswDRDsknaOfD2GmZLvO6W87fbUlP+akodLaRjpeMK3N6CRCUJ/ZnPpcJ2DgwTtAZH4BKs0iMZdCMgYvwANijjpg0bJpFoLCN35V2ihHXHuu9a83vo9N0Gae+iMAfbP0oi000tj4JZzhIxnW75hf/KG50t6BKee++gNt5nQPKKn3+hOke2kTGoEQM3UaTCsVm9K54lBTQwUosR3nmAtQ6uvlB2AQFsiRzp8JUDRO7901MymYig6jyezNNcD1GhU6PnD5NkvkcMrHGafFaAH31CW/vmJ6WithqsMRoIzYNERaoY2GE2QETGh2o+IpUAFUTreyfLpCH0BJq1UH2gwSz6a/Y/s0DZIG1E6AWjs0373t0JwCljJ/+UHeKLIpj+Y3EPiV6Jn/9aIf+hWN08wFpKmdqn8BKl8iRDYyMdkoy1dqhlfowL2cdIBqP1Sp+uY5QDGjTVerm9kKUDoQoOQ3SwOCAnJMWw54U3kaUh4BS045zcQZtZWZcDis8mOS8u3lAmb5xZ+0qe1oxpfllB/FoYCewDMNzbzcy5wRLl/nSU968qpDWX3w/l/aBSDMEB/32E1YfB8aa2odyzKZvASIlqLlaUNHyew4Uzf9pwA2AUW2eO01OZpcOe4Kje1NGMFivhM3g/acwA6s7Yg4BNb+YxlTo6zrC0XKL9v7HASYqVvCvOWtlrZwznwZVW852g+VyTz0o9RNMP07AyABo8Sk5ZRPQKWhgElbaTPXwAwcQFJIgy/GDCqHUYBlJqYNYCS4vrPAwVeG8Fb8acwuj12ATUhMkzYzaX0WMkc7fwYo+EYYXNkNUNssL82ivHVFbaJXXcW21IUmbQaoaNDf2pLkN1De9Mbj77o3uegPjQJTAPMWM/OJH5J+0VZvPmX7AqH+4x+Fgg8BKWAHpKkJA9XaUx6gMjWZQZXSUJk1x/wUwk0gtENhg0MNE7Bqo/U3YQCzNgABjPVN78u39bfAJz8aaBCaR3hC+9pSvs8KAoe60MLkmWLnj3HKOe6FOAhDiKKlGPf5XOia5i5ALcEcLaADaxqmtbNperrHbMSPAMXk0SzN4ry5kznhD/ZqurppnMIGgQkgHGtTKsTgnj3t6E3A5Oo6obe9GE8oAm/dBOK+C2WgzZhVJm4uGE+Axxt5K3PSa1Q6FyHuEQofKqFn3nLQgcrRNcHM3QaZjgQTqAhOFBgQCqb5Ex4aCuMzN2lK9+T39RcJKGhDbQvM8ce0b8QZacye0Q2I6tCHCSiAZEL5DkwN7WDnQet+7TaYbkA+FFATOMEDQH6PmVJvsTCFAYsGUg4YmbzAFyD7JBEN2uvfknxTQxEUOrz6lGkEzkye+rwKnw9FuM3GnOdMS96PtKQCPOpuAOGfegR58RzdUrGw6v1I2mmFFfhQmIeRbtaBBEoYNFQjH7AcXeeoEyBhud4i5eo72SGfgKJGLTgCIgCY3bHVVvLzoaaGmpFybaBBGfES9IqfAAnHmubxnM+knDpauinKrh4gElxFD2H3z5cNhIDUvcwAP4wwaRhHI9yWEczk7Le42yyKBiWcNFQmEQjkS0Opg5YgUIBTP63lWYILlJm6nH/JuX73ScqpMVyboaV5BCyB12QCz/mgjniLBn4tut0TLObvTk0ZmKa2yqQuQGV3JUQ7EjpmEgh/h/BzYNNW/CbaBaAQt3yoow+OZTKdB6qEBPXNHJVn6hyXD3XZsQ8VoAr8ARFA0Goc4L6+0r4iz6onQOmbF1YBCpAMBtrM6PQqU0APwBLmda/7mOho4sAPamoPOLScfADAL8oPInQACFCChQFBWYDqO5jqIOTAoX59SJAEduYZZ64y173O5vgXs8qnc+4bmQAkv0EA6JmtQABQ0Z6JVd/htaTOwhf5g2mrAJUWTHstH8oJ5hKCB4Qos4q871UAE0ObqvMRmCCmoy0cRkLCcJxgauQDgTqZH4JtpwFgpVVmorUsa/SNKmWkvtDGHBr9tB0mABwNSIiZTIJTttABRvkc4AT6BHH3CdQ9TEN3W0WABvNpqABFy7gGiD53hD8GqQRQaTVCAw7LP9oQNuh+vpH+TpMnZBBg04CZUAOMPAysBkC+cbOxfCBbiXLOJzgyX4dJPXNxOXA6kvfaL/XO4x0IS0N5gKGYrzDmpWatN3GAEc55BShCcY9gMcMsyzv+Zg9z/W6O8gTGvNAuNF1hA8ygYtsUF5iUNa2ldUSpTWe1xXxZl5NXNLpgJS3Kn2FK9AUo9EEez5lWzwnEfqW0UYCaAHM+/Qj1AVRagfABB5DQyowSuLoTuvwBqtf1e8aP6b/oLA25r17P8LrPVROcPK3leZZZTRsCuQHPx5vBR7JdFujoD7enuboiMAFMmuhQs7V1WSim+9OB73ppKJkxTcfddJSBduBY8k0Qz7bSUgSHWQQLcITknlmNUbEH09HrT4TFr8IgdQOU/LQUMGEGhudIJ1zJPUKjAQkA05jbTJ57tBst1+4HI7VZniMtAry0mH7QAN43m4DSrmtl6kNatXgNUBdvSssQvOgzGnK2c6zt0wpQtGi+k+eOeOgrM+jyTBnPApT201BppEIPLR9lprgdBrl/QggsQKEfQEWu1VXKYc+hnkBLO01Q5ej3fIJqDyiNmVISjpGg8nwpwhSKxxiaAQAsgzAdfZ/culCzvML1jfD+2iKfDIPU3f/H8HvYc5rDLGPGoSagaBzAa1eh9jjV6qK1AImpAxqhBXGruThMe2iLT2NKzwcUCDTbsyDKpHJOmc9oCFANtv/7v/9boCf4/A2J1kFb2gPYOortxFfAJ/jDlKOe5uo+vmuf8KzReROFBtQOGjjM/Ft5LSmJcrvfB2szSw2OfB33ASWwBLIANGf5jnagBKLKB54JTPdgZ83y+q4AQvKhVJYwCTFzwkFmrqhgpk/Hgc35dMozXU25c9LzoQCwT98ArLQX5tEyTa+O05KAUgBTzMk7/Z6JaQEYzQRwQG/kBihHTG5HgleG+C72ZnH0/bWH/OgwSOZMU9Inphzd9hrRjgAzg5qBKDDkK4k667/kz3nMotJOOcJptMDU4uzcnEfjqk/56jCgbG0GsL6M54ivZIiPmbAGuWsv9tJiHHj/6eJYorXnvb5QPDVVGimtttds526hgxMayofCNAUTKIGZNhIgLVAEF6BoKsxN0Doy95RPJzcw5SQDgbLUN7PJJPHHaJOV/+gVLCvxRbppHWVoF0Bg8tTV/xjTcr14AEAzbGD5oN2Ivrinff+tQjhACFz6YJCoM/OHXm9D246LRxxjLw1or/hPx8CRoywIOkczcHDS838KKvLDOg9keEr4BKTczW5288V7ddNStJV947SDAaZOHzDzqUV96ut/aZy0lHt9Eqh/7ewbUflmaEFTW2X6h9M0WU7+BFYO/97kybgEeKRJGhlMijgUQRj5GOmcrcYwwgM0o98It5ZX2WZIAaxEYEwLU8fuI5hf1Aa7qW7VwX8xGbBNRH5gZnKNUHX5W4nutfwiTBA4aZyHP+zhqw1xJIAS6AQqI5ogjViOMVrSUJvfd+HSTnZyellA3UAlBgaAUwCSa+C61z3vtWJC0xwQCG2HDhqtsmmeZogGi10DlaXZCL8Ie+31xRmmOkceqCR1oNsgAEy8TA7qFrMz65T4aq0AkK1rmloe0XpbjbM0mc38ruJbAW2voUpplRBNYHwUAJJypCUgcmwLCya1OAwIOptTOx11IAUGoQYdoWkAk0/QzKwOOHKGaahiScyvEcxsyu/VKfUAlHowk4bKfDoKG5hQFMNSl6gzbQfY6veRd1owGtCKbswyqvVNu8yrN3L4R4VLpGa+BLBMwHjFfILKS5M+t4Ne5dGjLA0KqAmoOvAHjdrgcjjSxJ6hz6SoOGB7m1gUIALqPiaWDBzd7zNKIuf2PAGpuuzQ1N/S/BiZOvUhrdSGveiVlg8VoJz3bUdbU4GCA91OSQIjFAAS0CQQGsqMw+hpCzAg0HY+QjEdbPfTQIe2Xb7lBI79WWkKdaWyPZfSgM3MPKtuZTJZE9TaxITKue4Da9oA9jRsdCvHx7T4yvRZke9bop7ljKprmoaY3H7sGK8teWr/sKwUqJRFD5ppFnQ0SfA8vybzSPjVT4MZBFL7ofBBHcBHQ5ZowEz1DHu414f9tZdzfmj25vkCVAmDMlOO+VD8HCoecGgmWqnFWOdGrdGh0wFUeSlgdL+REugCxNRiMxFsSd55ffjsPZccfx/JcQKu9nU6DZoQCck1fyuaoz8/hCCM6D4qoa/4o9ycQSXoPaAWowFqOLBj6l4KTKVG/NRYgOU6cM52NyBu+WsfqAwYtDblV9asl2lj0nobmfmzNupef/LNT2YJlGtxOVoaHO5Fw9JQaYNGcIBybcQGKKCZJg+g3M+3orZ1oJEdaA6BdAiSBD+Bt4R50XEwdB47n9dmg/N+2i/QTI2HAfqV1pPMfAiBeex+dU1hEwpzQVNJ/BSgSmNMsExATFAc5ut65pn5AsfUBJkb12mNhAv4yuTTANPpp5+xAFHdZnJNoPQx2cRPvArU1dFHP9TTxz/iSaCS1gY7lWUuYrJAJGa1TJLDy7GlpTjCHML2KLHdmD2FHaACVR2YAOhZH3o4BMs8T0OldfbPjj4kVluSzsmnD9MUup9/J1+xNymNs7TdUVsJzDFBMSPzU46BatMSJ0eOS10HlgQWEPbPzj0ZaNV5RSCkWdfyxwAvkM/6AkDmEs2i9JaeDjU5XhQ3m/2v/FbH8QsOU2vtAdXobSYQwBxzytNCgCQ575XwFo1pLBoqgVYfYqeG2APl4KNffQRsAm2C5BBcH+k6JuXfFAbo2bp36WUrj+uAgDHOi2xjqjxL8EffkExbYKgR7g8COK5GaVH+Qy0zwTBBNVOgUk/gLU0AlabWkgKVOub3LiXPgIzwJeaaA26CY7krF6ZtSG1LSq4mHw3QUlpJfTNksACV4xqIppYijDbD8aHMRDjjrnsTxnS+wCZ7PYUayhMoISWo7k2tMzWD9hs1AWfmKfU8U1VZIy1HnW/kKD8hEX4gLFSCGa712fNpLqcgpXwRoGL6AAtjtaO+KwJCAKmONFT5uhegmlEx34Fw1jtTAu06c+T+FL7klami6pQAQAFRsURyFPl3NAu1moA/AT5aaq/+NShWHCoApUkCVVP8AptQe9e7bK97a5RjZznDtFbQ0TKMWZBkGt7/sXXua2kir76sIpXPfc8l1/7YRhRYWebFUSyI4DzjGLuW14YwQT71KVP96iRsQUujUh1Gq+g1n0AZdajLuciwI8aIYaFNXeq09OFrvyLH/T19/yTuXxv6qrAYVVNyeeTVni8Pq6O3ol/x8lesLwK79qx/JFfe8/6xHO3H/1j+8pV//qO5Z1u9W13VI3Y1BZ8JdAQosTgb8sjewCnZV9+AboLWTHQB8+3H8afMXSmw7V+jUrgpc/fSUAEKkmkovpRlDPGcXsVxX7SburQjQR5msf1TwNjWF8fW3nLo26TnvraMIBrQN5sA1ggSJxK/cb8IvbaB23JHa4pALr6DRnkNAD6DWYz1OMw0K3WuPefWw9QjRkQ4jdii04KP1gEPE3/Eco6Aoq++8SV96EMf5pskM7+j+861e0XP3S9dUZuHaeZHqy08ad6E7pzvI1Zm8HoOQPlNFIjr6W6knfagGv5Zk4PM3dJQCkAhVHbMj6L622oCFIAFGITF1HHK22QnAswMSsBEiJ71dkur/eoCBteEqax7Zoz+Duw+97nvKqcdkWyvIjGxhI4R2gE8wUyA4cepI7ufD6CM52gGSNoTcGkkQU6AtWBLywIdIQABzWZ/NqCjS9n2ITlKwNCSiTgOgV71qlfdXelKV1p/DIQ/rfuptzKdt35XpNyz1vBcq0/9jvK3PdhRXueONM0EYaBXl+UmCiLhp1ne8pa3roHZh98syjNr7jna2UFRCC0IEFtqgofMmzrymw5BttdQGp7AyuxBbH8uQzDAYuQayYRLeL1eZbQDCtCkQQIMQQGfCK962ktO6Dn3QGAGae9TIL3yla+8Xj4EAPZcBzmS6nONGeqkmdAApMDmSEsBmC0iaLSjgLAEJTGO8AwWdKmrNTQTCyBrB0Mb6hJoqbdeWtQlVPQClTU19AAv4BN+4FPOsUXe1vXSgu6pL9B2T56p2eTpfoAKcOq3aM+PyjQ1M+M20OYtNNeuNPtX39qXFWgASJ0tu/Tdg7TY3ocCIICa/hRVaDmAgDHeiNUR4LGNFyCMwjSUY5qHdiCgYlgtjzQzdE3YReGB09ESDK0GWFbQ+ShoMOqNKmY186mtwAfsnrmnPIFa+HVP3YJ1TJONdWg3KGiozDlNpP3Xvua1q+4+YtYLCEWRJQJr7c61ZSd5aFSAOnHixKJd/2k8PEoTSeqSqvea19zqbp0u8AJK63wBKo2UtvRcu5m98pudAQIA5PMAFP+x/xUGeD5Vs1XLMKWuTbQOQxwBKm0FVGmrEzRSoMqHaqYWoERP+5NEhFv7EmElTGF8QqSVgMpCbpoK4Dwj1Nb/gA0wLQY7T2MRqvuZKZoHw4QtbDHx3D119YU1Po77tBZaMp3NQIGT9iFQuxIwnE9I6yoPZMCXmQZajrxnwERjAp5BFAgS2NQ6zCdQeQZIQJX5A0yOOdoqnxYJJGmIfKe0RIBNe+C9spnQjoe+l7wWwMkQCAg+gZswkI+E17Q/c2eQMW8+ccQqABpQnXbqafugqGh/Qc0AVv2Cw0tDNb3OMc8hC1AEAO19lAsT+CM53L2KDQTsL8c3DUG4iM7Hcd89wgcM1+pIq3gGLHwpGrG91XYDAJNnQNr+rLUgfOvbbP7XPe6x7qlH3e6hSSIUsylMRx9GyV8cxoDpZVVOeSsBgNZHNqZgCTKNkAlrDYyAJ6j4VsyGWaQBmXmkVQAgLZPG4RfliGsrzRjoOg9c8gesymnD7glynX4OwZuF2lWh7w10smor9nw9yzW3QrjCRzaAZ4YpMnNpwaWhAo+MPP1iSIUNbF/hoCFAYxoGKMLEIImWSDtl9oCP5mEeCZmAAg1BAUahiBxyHcvvoh08AyLqmdmKAfJ4Jg8wAzcTqlyjr/qBD5ONPkd5+riFPK75W+oBrD6vqCw69YMAW0jNJBlYzarSVvk/8tBOU1Px25hbdefIo0e56j8ExvSrlk9z9c1fm9pMPfl48igDhCZNOeWBqVhUftCZZ561ZqRmwHZkkJ+wEE2t/9b30AwbeCapy3X+VKASQV+AamqowbRVgBI2AJ6cXw3ZsalhwiiySrgAQ0htgENQWsI9YJIAgqASWtogjdDsUP2AA8TsuPy3uc32cqh65WNOag9wAA6w1RkgAI2AvdRgdKtP5NhGQfnkV5+Bkr+oTqAEWD5UYJLa261OAqUh8nU8J3BC9ewqV7nKHlS0ljd1ehNb3gABRGm/NNHUgFMT5nvJk7mb5jf/i8mbGiqnPEABBM1jMx7gNGNHG76QO/MnVlcdygKVugrGTlD9f4Bqg1szPRrKJ2c0SP0xb30vKo3DTGA+ARYOIHxEEZQRDnD5Sz0PYPk++S3yqb/P8hGE4CZ/iBbpNXJCp1m0kRltZqm8EAEaMJYK54cxX5htpmeWqn5lohHo1AXM+XbNiBJioMy8ARRnHwDU3axPEpfioJfstGRSbV9ugx7Tl/lTPi3jurpneCBHXgpM7mcq873MiItDJXQaySxWsJYbYdcqvlivtRdKfM7LFMqLq6HDtXrOOuvYD2uxOGf9WEudvflQAapvKhU2YAJNrTGeTRUsa6OaWViaYvo1hAgghNpoT0hzJuhavT1TLtMIKKb5zCwG8ePybZhQo0k5WtM58PHRaCx1KwsIfAWRfkLwYXnlgUJsixlFszbQqJxNd2hEd/4cwSvfDK895L2soL5Mn3yEoW2JJiPo/upCAkYReK920fC9oFAYIA3kes36rrZprWaAaUH7zxybdeaDyeM+RbA01FF0O4Gb0aFrajZtqo9y6C0ksjCIfezf7L8wARCpi9WQPCs+RYMtH6r1orkFt8i5cx+j8qYtZ1aoX+DPFgiOriUADifEU5HuO7bJnUrtuaO6bIZXh6M6PHOunKMlB2W1ZVlDXkBXVn47JuUT0da+bcBmUto2Q1FWOfT6PLJ6aSXtA5jpsHU3U3r1oVFdRq76tKNOzyyp+ENnfobUnx/a5YgnrjHdM/fdk5/PZjbpnBbory8aHEyGJRI+irqq29Hb0CV1rvTs5+z/YFFSZ+3UprLqonkCQYKmWSTm3osnZs94iAe0FqDg8VxfJXtm8djn2nYsAJRrlkPZ6aetP2Bs0bF92AEKUZ45Z/74VC3wtnhauL5nhfHnGlGr91JbRLp/+Nx120HaQYmeD3/4w/vlgVlWXp1vc1yLu+5Fs7o8d40R+tS7du7NOqNFOefq2S/annf8TpqENjxybJFUiqdp+yxA3wW3tzwaepmiuloQLuDc/WTh+VxobiG5pJx709R1LBA56wocEyh7n+hoq0pgyal3HkDXFwBPP31f1/ZZ6aN/Vnr/+48B1YxPIQToeKgtvKADBUGbLRYYbfmmvKUc/sr5h6piX/lvlXHOXgNEL25WPlrQqRzhTxq0LzXRkE89mGGkqa8+Vafy8s1rjG90OmLedG5LCa59QwnQPSCTn7l5w+vfsAKKtCRwAj/wakeZWb66i/fMewk2OtoRGhhKtrPYYzVpqZ7urf6dsfVpgiUAzeuCo7N9ffHcfvkTAQdo2tgvYf7mjJ21nhnNGBxQJmjmvYAyjwQaaAJLwg+MhBhA2zbiSKWiy/ZetAam8tu3Xn2rnqPNdpgVyHquPgylIQCNhqitWUea0rm+N3Jj7smCPF7H2o/sg/vFbYDRiBY8NXuy/UX9aW39CVQJL99FHb37NtufAJhtzntTe7oG5PlcHXPPem13PdtoQO75cfY2iGhez/4fiw0NhPQDnpAAAAAASUVORK5CYII=" alt="Out of the Box with Paul Shugrue"></span>
       </div>
       <div>
-        <h1>World Cafe Vault <span class="freq-pill">WXPN 88.5 FM</span></h1>
+        <h1>World Cafe Vault <span class="freq-pill">WXPN 88.5 FM</span> <button type="button" class="sync-pill" id="sync-pill" hidden title="Sync now"></button></h1>
         <div class="subtitle">Daily Broadcast Playlists, Live Studio 1A Sessions &amp; Streaming Index</div>
       </div>
     </div>
@@ -747,6 +760,22 @@
       <div class="small" id="yta-status" style="margin-top:8px"></div>
     </div>
 
+    <div class="section" id="sync-connection">
+      <h3 style="display:flex;align-items:center;gap:8px"><span class="ico" data-icon="radio"></span>Sync between devices</h3>
+      <p>Keeps your library, playlists and selection the same on your computer and phone, through your own Cloudflare Worker (it uses the AI relay address and token below, so set those up first on each device). The YouTube API key, the relay token, the Worker address and all sign-ins stay on each device and are never synced. The last 5 synced copies are kept, so a change can be undone.</p>
+      <div class="row">
+        <label class="small muted" style="display:flex;align-items:center;gap:8px">This device's name <input type="text" id="sync-device" maxlength="30" style="width:150px"></label>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <button class="btn btn-indigo" id="sync-toggle">Turn on sync</button>
+        <button class="btn btn-outline" id="sync-now">Sync now</button>
+        <button class="btn btn-outline" id="sync-history">Saved copies</button>
+        <button class="btn btn-soft" id="sync-undo" hidden>Undo last replace</button>
+      </div>
+      <div class="small" id="sync-status" style="margin-top:8px"></div>
+      <div class="sync-copies" id="sync-copies"></div>
+    </div>
+
     <div class="section" id="ai-connection">
       <h3 style="display:flex;align-items:center;gap:8px"><span class="ico" data-icon="sparkles" style="color:var(--amber)"></span>AI relay (playlist builder)</h3>
       <p>The AI Playlist Builder talks to your own Cloudflare Worker, which holds the Ollama key. Paste the Worker address and the app token once. Both are saved in this browser only; the token is never included in backups or written into the app file.</p>
@@ -848,6 +877,23 @@
   </div>
 </div>
 
+<div class="modal-backdrop" id="sync-modal" role="alertdialog" aria-modal="true" aria-labelledby="sync-modal-title">
+  <div class="modal small">
+    <h2 id="sync-modal-title" style="margin-bottom:10px">Which copy should be kept?</h2>
+    <p id="sync-modal-msg"></p>
+    <div class="sync-sides">
+      <div><b>This device</b><span id="sync-side-here"></span></div>
+      <div><b id="sync-side-other-title">The other copy</b><span id="sync-side-other"></span></div>
+    </div>
+    <p class="small muted" id="sync-modal-note">Whichever you replace is still kept: the last 5 synced copies stay on your Worker, and this device keeps its previous copy for "Undo last replace".</p>
+    <div class="modal-actions">
+      <button class="btn btn-soft" id="sync-later">Decide later</button>
+      <button class="btn btn-outline" id="sync-keep">Keep this device's copy</button>
+      <button class="btn btn-indigo" id="sync-use">Use the other copy</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast-wrap" id="toasts"></div>
 
 <script>
@@ -918,6 +964,7 @@ function saveDb() {
   } catch (e) {
     toast('Could not save to this browser: ' + e.message, 'error');
   }
+  if (typeof syncNoteChange === 'function') syncNoteChange();
 }
 
 /* =========================================================
@@ -3302,6 +3349,280 @@ $('#ai-forget').addEventListener('click', () => {
 $('#btn-import').addEventListener('click', () => renderAiConnStatus());
 $('.tab[data-view="creator"]').addEventListener('click', () => aiFetchUsage(false));
 
+/* =========================================================
+   Device sync (Phase 4). One synced copy of the library lives in your Cloudflare
+   Worker's D1 database. A save is accepted only if this device had the latest
+   version, so nothing is silently overwritten; when both devices changed, you
+   choose which copy to keep. Device-only settings never leave this browser.
+   ========================================================= */
+var syncState = null;               // var: saveDb may run before this block
+const SYNC_KEY = STORE_KEY + '.sync';
+const SYNC_PREV_KEY = STORE_KEY + '.syncPrevious';
+const SYNC_LOCAL_ONLY = ['youtubeApiKey', 'aiAppToken', 'aiWorkerUrl'];
+let syncBusy = false, syncTimer = null, syncApplying = false, syncSeq = 0, syncDeferred = false, syncLast = { kind: '', text: '' };
+
+function syncGuessDevice() { return /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) ? 'Phone' : 'Computer'; }
+function syncLoad() {
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(SYNC_KEY) || '{}') || {}; } catch (e) { saved = {}; }
+  return Object.assign({ on: false, base: 0, dirty: false, lastAt: '', device: syncGuessDevice() }, saved);
+}
+function syncSave() { try { localStorage.setItem(SYNC_KEY, JSON.stringify(syncState)); } catch (e) { /* storage unavailable */ } }
+syncState = syncLoad();
+
+function syncNoteChange() {
+  if (!syncState || !syncState.on || syncApplying) return;
+  syncSeq++;
+  if (!syncState.dirty) { syncState.dirty = true; syncState.changedAt = new Date().toISOString(); syncSave(); }
+  setSyncStatus('warn', 'Not synced yet');
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(() => syncNow(), 3000);
+}
+
+// The copy that gets synced: everything except this device's own key, token and Worker address.
+function syncPayload() {
+  const copy = Object.assign({}, db, { settings: Object.assign({}, db.settings) });
+  SYNC_LOCAL_ONLY.forEach((k) => delete copy.settings[k]);
+  delete copy.exportedAt;
+  return JSON.stringify(copy);
+}
+
+function syncApply(data) {
+  try { localStorage.setItem(SYNC_PREV_KEY, JSON.stringify({ at: new Date().toISOString(), data: db })); } catch (e) { /* too large or unavailable */ }
+  const keep = {};
+  SYNC_LOCAL_ONLY.forEach((k) => { if (db.settings[k] !== undefined) keep[k] = db.settings[k]; });
+  syncApplying = true;
+  try {
+    db = Object.assign(emptyDb(), data, { settings: Object.assign({}, data.settings || {}, keep) });
+    delete db.exportedAt;
+    saveDb();
+  } finally { syncApplying = false; }
+  renderAll();
+  renderSyncSettings();
+}
+
+async function syncFetch(path, opts) {
+  const res = await fetch(aiEndpoint(path), Object.assign({ cache: 'no-store' }, opts || {}, {
+    headers: Object.assign({ 'X-App-Token': db.settings.aiAppToken }, (opts && opts.headers) || {})
+  }));
+  const body = await res.json().catch(() => ({}));
+  return { status: res.status, body };
+}
+
+function setSyncStatus(kind, text) {
+  syncLast = { kind, text };
+  const pill = $('#sync-pill');
+  pill.hidden = !(syncState && syncState.on);
+  pill.className = 'sync-pill ' + kind;
+  pill.textContent = text;
+  const st = $('#sync-status');
+  if (st) st.innerHTML = syncState && syncState.on
+    ? '<span class="sync-pill ' + kind + '" style="cursor:default">' + escapeHtml(text) + '</span>' +
+      (syncState.lastAt ? ' <span class="muted">· last synced ' + escapeHtml(new Date(syncState.lastAt).toLocaleString()) + ' · version ' + syncState.base + '</span>' : '')
+    : '<span class="muted">Sync is off on this device.</span>';
+}
+
+function describeSide(tracks, playlists, extra) {
+  return tracks + ' tracks · ' + playlists + ' playlists' + (extra ? '<br><span class="muted">' + escapeHtml(extra) + '</span>' : '');
+}
+
+// Asks which copy to keep. Resolves 'keep', 'use' or null (decide later).
+function syncChoose(title, msg, remote, opts) {
+  return new Promise((resolve) => {
+    $('#sync-modal-title').textContent = title;
+    $('#sync-modal-msg').textContent = msg;
+    $('#sync-side-here').innerHTML = describeSide(db.tracks.length, db.playlists.length, (opts && opts.hereNote) || (syncState.changedAt ? 'changed here ' + new Date(syncState.changedAt).toLocaleString() + ', not yet synced' : 'has changes not yet synced'));
+    $('#sync-side-other-title').textContent = (opts && opts.otherTitle) || 'The other copy';
+    $('#sync-side-other').innerHTML = describeSide(remote.tracks, remote.playlists, 'saved ' + new Date(remote.updatedAt).toLocaleString() + (remote.device ? ' by ' + remote.device : ''));
+    $('#sync-keep').textContent = (opts && opts.keepLabel) || "Keep this device's copy";
+    $('#sync-use').textContent = (opts && opts.useLabel) || 'Use the other copy';
+    const modal = $('#sync-modal');
+    modal.classList.add('open');
+    const done = (v) => { modal.classList.remove('open'); $('#sync-keep').onclick = $('#sync-use').onclick = $('#sync-later').onclick = null; resolve(v); };
+    $('#sync-keep').onclick = () => done('keep');
+    $('#sync-use').onclick = () => done('use');
+    $('#sync-later').onclick = () => done(null);
+  });
+}
+
+async function syncPush() {
+  const seq = syncSeq;
+  const q = '/sync?base=' + syncState.base + '&device=' + encodeURIComponent(syncState.device || '') +
+    '&tracks=' + db.tracks.length + '&playlists=' + db.playlists.length;
+  const r = await syncFetch(q, { method: 'PUT', body: syncPayload(), headers: { 'Content-Type': 'application/json' } });
+  if (r.status === 200) {
+    syncState.base = r.body.version;
+    syncState.lastAt = r.body.updatedAt;
+    if (seq === syncSeq) syncState.dirty = false;
+    syncSave();
+    return 'saved';
+  }
+  if (r.status === 409) return 'conflict';
+  throw new Error(r.body.error || 'HTTP ' + r.status);
+}
+
+async function syncResolve(remote) {
+  const choice = await syncChoose('Both devices changed the library',
+    'Your library changed on this device and on another device since they last synced. Choose which copy to keep on both devices.', remote);
+  if (choice === 'use') {
+    syncApply(remote.data);
+    syncState.base = remote.version; syncState.dirty = false; syncState.lastAt = remote.updatedAt; syncSave();
+    toast('Using the other copy. This device\'s copy can be brought back with "Undo last replace".', 'ok');
+    return true;
+  }
+  if (choice === 'keep') {
+    syncState.base = remote.version; syncSave(); // the other copy stays among the 5 saved copies
+    await syncPush();
+    toast("Kept this device's copy. The other copy is still among the saved copies.", 'ok');
+    return true;
+  }
+  syncDeferred = true;
+  return false;
+}
+
+async function syncNow(manual) {
+  if (!syncState.on || syncBusy) return;
+  if (!aiConfigured()) { setSyncStatus('err', 'Sync needs the relay'); return; }
+  if (manual) syncDeferred = false;
+  syncBusy = true;
+  clearTimeout(syncTimer);
+  setSyncStatus('busy', 'Syncing…');
+  try {
+    let r = await syncFetch('/sync?have=' + syncState.base);
+    if (r.status !== 200) throw new Error(r.body.error || 'HTTP ' + r.status);
+    let remote = r.body;
+    if (remote.unchanged || remote.version === syncState.base) {
+      remote = null;                             // the server has nothing newer
+      if (syncState.dirty && (await syncPush()) === 'conflict') {
+        r = await syncFetch('/sync?have=-1');    // someone saved in between: fetch their copy
+        remote = r.body;
+      }
+    }
+    if (remote && remote.version !== syncState.base) {
+      if (remote.version === 0) {               // nothing on the server yet (or it was emptied)
+        syncState.base = 0; syncState.dirty = true; await syncPush();
+      } else if (!syncState.dirty) {             // only the other device changed: take its copy
+        syncApply(remote.data);
+        syncState.base = remote.version; syncState.lastAt = remote.updatedAt; syncSave();
+        toast('Updated from ' + (remote.device || 'your other device'));
+      } else if (!syncDeferred) {                // both changed: ask
+        await syncResolve(remote);
+      }
+    }
+    syncSave();
+    if (syncDeferred && syncState.dirty) setSyncStatus('warn', 'Sync: choose a copy');
+    else setSyncStatus(syncState.dirty ? 'warn' : 'ok', syncState.dirty ? 'Not synced yet' : 'Synced');
+  } catch (e) {
+    const offline = !navigator.onLine || e instanceof TypeError;
+    setSyncStatus(offline ? 'warn' : 'err', offline ? (syncState.dirty ? 'Not synced yet (offline)' : 'Offline') : 'Sync error');
+    if (!offline) console.warn('Sync error:', e.message);
+  } finally {
+    syncBusy = false;
+    renderSyncSettings();
+  }
+}
+
+async function syncTurnOn() {
+  if (!aiConfigured()) { toast('Set up the AI relay (address and token) on this device first.', 'error'); return; }
+  let r;
+  try { r = await syncFetch('/sync?have=-1'); } catch (e) { toast('Could not reach the relay.', 'error'); return; }
+  if (r.status !== 200) { toast(r.body.error || 'The relay answered HTTP ' + r.status, 'error'); return; }
+  const remote = r.body;
+  syncState.on = true; syncState.device = $('#sync-device').value.trim() || syncState.device;
+  if (remote.version === 0) {
+    syncState.base = 0; syncState.dirty = true; syncSave();
+    await syncNow(true);
+    toast('Sync is on. This device\'s library is now the synced copy.', 'ok');
+  } else if (!db.tracks.length) {
+    syncApply(remote.data);
+    syncState.base = remote.version; syncState.dirty = false; syncState.lastAt = remote.updatedAt; syncSave();
+    setSyncStatus('ok', 'Synced');
+    toast('Sync is on. Library downloaded from ' + (remote.device || 'your other device') + '.', 'ok');
+  } else {
+    const choice = await syncChoose('A synced copy already exists',
+      'Another device already synced a library. Choose which copy both devices should use from now on.', remote,
+      { hereNote: 'library on this device', otherTitle: 'The synced copy', keepLabel: "Use this device's copy", useLabel: 'Use the synced copy' });
+    if (!choice) { syncState.on = false; syncSave(); renderSyncSettings(); return; }
+    syncState.base = remote.version;
+    if (choice === 'use') { syncApply(remote.data); syncState.dirty = false; syncState.lastAt = remote.updatedAt; }
+    else syncState.dirty = true;
+    syncSave();
+    await syncNow(true);
+    toast('Sync is on.', 'ok');
+  }
+  renderSyncSettings();
+}
+
+function renderSyncSettings() {
+  if (!syncState) return;
+  $('#sync-device').value = syncState.device || '';
+  $('#sync-toggle').textContent = syncState.on ? 'Turn off sync' : 'Turn on sync';
+  $('#sync-toggle').className = 'btn ' + (syncState.on ? 'btn-soft' : 'btn-indigo');
+  $('#sync-now').disabled = !syncState.on;
+  $('#sync-history').disabled = !syncState.on;
+  let hasPrev = false;
+  try { hasPrev = !!localStorage.getItem(SYNC_PREV_KEY); } catch (e) { /* ignore */ }
+  $('#sync-undo').hidden = !(syncState.on && hasPrev);
+  if (!syncState.on) { $('#sync-copies').innerHTML = ''; setSyncStatus('', ''); } else setSyncStatus(syncLast.kind || 'ok', syncLast.text || 'Synced');
+}
+
+// Makes the current local library the newest synced version (used by restore and undo).
+async function syncPublishLocal() {
+  const h = await syncFetch('/sync/history');
+  const latest = h.status === 200 && h.body.copies && h.body.copies[0] ? h.body.copies[0].version : syncState.base;
+  syncState.base = latest; syncState.dirty = true; syncSave();
+  await syncNow(true);
+}
+
+async function syncShowHistory() {
+  const box = $('#sync-copies');
+  box.innerHTML = '<span class="muted small">Loading saved copies…</span>';
+  try {
+    const r = await syncFetch('/sync/history');
+    if (r.status !== 200) throw new Error(r.body.error || 'HTTP ' + r.status);
+    box.innerHTML = r.body.copies.map((c) => '<div class="row"><span><b>Version ' + c.version + '</b>' + (c.version === syncState.base ? ' (current)' : '') +
+      ' · ' + escapeHtml(new Date(c.updatedAt).toLocaleString()) + (c.device ? ' · ' + escapeHtml(c.device) : '') + ' · ' + c.tracks + ' tracks, ' + c.playlists + ' playlists</span>' +
+      (c.version === syncState.base ? '' : '<button class="btn btn-outline btn-sm" data-restore="' + c.version + '">Restore</button>') + '</div>').join('') ||
+      '<span class="muted small">No saved copies yet.</span>';
+  } catch (e) { box.innerHTML = '<span class="small" style="color:var(--danger)">Could not load saved copies.</span>'; }
+}
+
+$('#sync-copies').addEventListener('click', async (e) => {
+  const b = e.target.closest('[data-restore]');
+  if (!b) return;
+  const v = b.dataset.restore;
+  const ok = await confirmDialog('Restore version ' + v + '?', 'This replaces the library on this device with saved version ' + v + ' and syncs it to your other devices as the newest version. The current copy stays among the saved copies.', 'Restore');
+  if (!ok) return;
+  const r = await syncFetch('/sync/copy?v=' + encodeURIComponent(v));
+  if (r.status !== 200) { toast(r.body.error || 'Could not load that copy.', 'error'); return; }
+  syncApply(r.body.data);
+  await syncPublishLocal();
+  syncShowHistory();
+  toast('Restored version ' + v + '.', 'ok');
+});
+$('#sync-undo').addEventListener('click', async () => {
+  let prev = null;
+  try { prev = JSON.parse(localStorage.getItem(SYNC_PREV_KEY) || 'null'); } catch (e) { prev = null; }
+  if (!prev) return;
+  const ok = await confirmDialog('Undo last replace?', 'Brings back the library this device had before it was last replaced (' + new Date(prev.at).toLocaleString() + ': ' + prev.data.tracks.length + ' tracks) and syncs it as the newest version.', 'Undo');
+  if (!ok) return;
+  syncApply(prev.data);
+  await syncPublishLocal();
+  toast('Previous copy brought back.', 'ok');
+});
+$('#sync-toggle').addEventListener('click', () => {
+  if (syncState.on) { syncState.on = false; syncSave(); renderSyncSettings(); toast('Sync turned off on this device'); }
+  else syncTurnOn();
+});
+$('#sync-now').addEventListener('click', () => syncNow(true));
+$('#sync-pill').addEventListener('click', () => syncNow(true));
+$('#sync-history').addEventListener('click', syncShowHistory);
+$('#sync-device').addEventListener('change', (e) => { syncState.device = e.target.value.replace(/[^\w .-]/g, '').trim().slice(0, 30) || syncGuessDevice(); syncSave(); renderSyncSettings(); });
+$('#btn-import').addEventListener('click', () => renderSyncSettings());
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') syncNow(); });
+window.addEventListener('online', () => syncNow());
+setInterval(() => { if (document.visibilityState === 'visible') syncNow(); }, 60000);
+
 // Resource-row logos reuse the header's embedded images.
 document.querySelectorAll('img[data-logo-from]').forEach((img) => { const src = document.querySelector(img.dataset.logoFrom); if (src) img.src = src.src; });
 // The resources box remembers whether you left it open or closed (this browser only).
@@ -3321,6 +3642,8 @@ try {
 renderSpotifyStatus();
 spHandleRedirect();
 if (currentView === 'creator') aiFetchUsage(true);
+renderSyncSettings();
+if (syncState.on) syncNow();
 </script>
 </body>
 </html>

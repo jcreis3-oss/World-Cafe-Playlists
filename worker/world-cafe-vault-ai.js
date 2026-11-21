@@ -1,7 +1,9 @@
-// World Cafe Vault - AI relay (Cloudflare Worker)
+// World Cafe Vault - AI relay and device sync (Cloudflare Worker)
 //
 // The app calls this Worker; the Worker calls Ollama Cloud. The Ollama API key
 // lives only in the Worker secret OLLAMA_API_KEY and is never sent to the app.
+// The Worker also keeps one synced copy of the library (plus the last 5 saved
+// copies) in a D1 database, so the computer and phone stay in step.
 //
 // Settings in the Cloudflare dashboard (nothing secret is in this file):
 //   Secret   OLLAMA_API_KEY  - your Ollama API key
@@ -9,10 +11,17 @@
 //   Variable MODEL           - Ollama model name, e.g. gpt-oss:20b
 //   Variable DAILY_LIMIT     - runs allowed per day (UTC), e.g. 60
 //   KV binding RATE          - a KV namespace used only for the daily run counter
+//   D1 binding DB            - the sync database (tables: see the CREATE TABLE lines below)
 //
 // Endpoints:
 //   GET  /usage  -> { limit, used, left }          (does not count as a run)
 //   POST /pick   -> { picks: [{ id, reason }], model, left }
+//   GET  /sync?have=N             -> latest synced copy (or { unchanged: true } if N is current)
+//   PUT  /sync?base=N&device=..   -> save a new copy; refused with 409 unless N is the latest version
+//   GET  /sync/history            -> the last 5 saved copies (version, time, device, counts)
+//   GET  /sync/copy?v=N           -> one saved copy
+// Sync requests never count as AI runs. Saved copies must not contain the YouTube API key,
+// the relay token or the Worker address; the Worker refuses any copy that does.
 //
 // This Worker never logs requests or instructions. Turn Workers Logs off in the
 // Worker's settings as well.
@@ -23,6 +32,13 @@ const MAX_BODY_BYTES = 200000;
 const MAX_CANDIDATES = 1500;
 const MAX_INSTRUCTION = 2000;
 const MAX_TARGET = 50;
+const MAX_SYNC_BYTES = 1900000; // D1 rows top out at about 2 MB
+const KEEP_COPIES = 5;
+const FORBIDDEN_KEYS = ['"youtubeApiKey"', '"aiAppToken"', '"aiWorkerUrl"'];
+
+// Run once in the D1 console when setting up:
+// CREATE TABLE vault (id INTEGER PRIMARY KEY CHECK (id = 1), version INTEGER NOT NULL, data TEXT NOT NULL, updated_at TEXT NOT NULL, device TEXT, tracks INTEGER, playlists INTEGER);
+// CREATE TABLE vault_history (version INTEGER PRIMARY KEY, data TEXT NOT NULL, updated_at TEXT NOT NULL, device TEXT, tracks INTEGER, playlists INTEGER);
 
 export default {
   async fetch(request, env) {
@@ -31,7 +47,7 @@ export default {
     const cors = allowed
       ? {
           'Access-Control-Allow-Origin': origin,
-          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
           'Access-Control-Allow-Headers': 'Content-Type, X-App-Token',
           'Access-Control-Max-Age': '86400',
           Vary: 'Origin',
@@ -50,9 +66,10 @@ export default {
     if (!env.APP_TOKEN || !(await sameText(token, env.APP_TOKEN))) {
       return reply(401, { error: 'App token missing or wrong.' });
     }
-    if (!env.RATE) return reply(500, { error: 'Worker setup: KV binding RATE is missing.' });
-
     const url = new URL(request.url);
+    if (url.pathname === '/sync' || url.pathname.startsWith('/sync/')) return handleSync(request, env, url, cors, reply);
+
+    if (!env.RATE) return reply(500, { error: 'Worker setup: KV binding RATE is missing.' });
     const limit = Math.max(0, parseInt(env.DAILY_LIMIT || '60', 10) || 0);
     const day = new Date().toISOString().slice(0, 10);
     const counterKey = 'runs:' + day;
@@ -142,6 +159,67 @@ export default {
     return reply(200, { picks, model: env.MODEL || 'gpt-oss:20b', left, limit });
   },
 };
+
+// ---------------- Device sync ----------------
+async function handleSync(request, env, url, cors, reply) {
+  if (!env.DB) return reply(500, { error: 'Worker setup: D1 binding DB is missing.' });
+  const head = 'SELECT version, updated_at, device, tracks, playlists FROM ';
+  const meta = (r) => ({ version: r.version, updatedAt: r.updated_at, device: r.device || '', tracks: r.tracks, playlists: r.playlists });
+  const rawReply = (r) => new Response(
+    '{"version":' + r.version + ',"updatedAt":' + JSON.stringify(r.updated_at) + ',"device":' + JSON.stringify(r.device || '') +
+    ',"tracks":' + (r.tracks | 0) + ',"playlists":' + (r.playlists | 0) + ',"data":' + r.data + '}',
+    { status: 200, headers: { ...cors, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
+
+  if (request.method === 'GET' && url.pathname === '/sync') {
+    const row = await env.DB.prepare(head + 'vault WHERE id = 1').first();
+    if (!row) return reply(200, { version: 0 });
+    const have = parseInt(url.searchParams.get('have') || '-1', 10);
+    if (have === row.version) return reply(200, { ...meta(row), unchanged: true });
+    const full = await env.DB.prepare('SELECT version, updated_at, device, tracks, playlists, data FROM vault WHERE id = 1').first();
+    return rawReply(full);
+  }
+  if (request.method === 'GET' && url.pathname === '/sync/history') {
+    const { results } = await env.DB.prepare(head + 'vault_history ORDER BY version DESC LIMIT ?').bind(KEEP_COPIES).all();
+    return reply(200, { copies: (results || []).map(meta) });
+  }
+  if (request.method === 'GET' && url.pathname === '/sync/copy') {
+    const v = parseInt(url.searchParams.get('v') || '0', 10);
+    const row = await env.DB.prepare('SELECT version, updated_at, device, tracks, playlists, data FROM vault_history WHERE version = ?').bind(v).first();
+    return row ? rawReply(row) : reply(404, { error: 'That saved copy is no longer kept.' });
+  }
+  if (request.method === 'PUT' && url.pathname === '/sync') {
+    const base = parseInt(url.searchParams.get('base') || '', 10);
+    if (!(base >= 0)) return reply(400, { error: 'Missing base version.' });
+    const device = String(url.searchParams.get('device') || '').replace(/[^\w .-]/g, '').slice(0, 30);
+    const tracks = Math.max(0, parseInt(url.searchParams.get('tracks') || '0', 10) || 0);
+    const playlists = Math.max(0, parseInt(url.searchParams.get('playlists') || '0', 10) || 0);
+    const declared = parseInt(request.headers.get('Content-Length') || '0', 10) || 0;
+    if (declared > MAX_SYNC_BYTES) return reply(413, { error: 'Library too large to sync.' });
+    const data = await request.text();
+    if (new TextEncoder().encode(data).length > MAX_SYNC_BYTES) return reply(413, { error: 'Library too large to sync.' });
+    if (data[0] !== '{' || !data.includes('"tracks"')) return reply(400, { error: 'That is not a library copy.' });
+    if (FORBIDDEN_KEYS.some((k) => data.includes(k))) return reply(400, { error: 'Refused: the copy contains a key, token or Worker address.' });
+
+    const now = new Date().toISOString();
+    const res = base === 0
+      ? await env.DB.prepare('INSERT INTO vault (id, version, data, updated_at, device, tracks, playlists) VALUES (1, 1, ?, ?, ?, ?, ?) ON CONFLICT(id) DO NOTHING')
+          .bind(data, now, device, tracks, playlists).run()
+      : await env.DB.prepare('UPDATE vault SET version = version + 1, data = ?, updated_at = ?, device = ?, tracks = ?, playlists = ? WHERE id = 1 AND version = ?')
+          .bind(data, now, device, tracks, playlists, base).run();
+    if (!res.meta || res.meta.changes !== 1) {
+      const cur = await env.DB.prepare(head + 'vault WHERE id = 1').first();
+      return reply(409, { error: 'The synced copy changed on another device.', ...(cur ? meta(cur) : { version: 0 }) });
+    }
+    const version = base + 1;
+    await env.DB.batch([
+      env.DB.prepare('INSERT OR REPLACE INTO vault_history (version, data, updated_at, device, tracks, playlists) VALUES (?, ?, ?, ?, ?, ?)')
+        .bind(version, data, now, device, tracks, playlists),
+      env.DB.prepare('DELETE FROM vault_history WHERE version NOT IN (SELECT version FROM vault_history ORDER BY version DESC LIMIT ?)').bind(KEEP_COPIES),
+    ]);
+    return reply(200, { version, updatedAt: now, device, tracks, playlists });
+  }
+  return reply(404, { error: 'Not found.' });
+}
 
 function parsePicks(text) {
   const tryParse = (s) => { try { return JSON.parse(s); } catch (e) { return null; } };
