@@ -99,7 +99,7 @@
   .tab .count { font-size: 0.75rem; font-weight: 700; background: #e2e6ee; color: #334155; padding: 1px 8px; border-radius: 7px; }
   .tab.active .count { background: var(--blue-soft); color: var(--blue); }
 
-  main.container { padding-top: 28px; padding-bottom: 96px; }
+  main.container { padding-top: 28px; padding-bottom: 140px; } /* room to scroll the last track clear of the floating buttons */
 
   /* ---------- Cards ---------- */
   .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
@@ -244,6 +244,17 @@
   .table-top .hint { color: var(--muted); font-size: 0.85rem; }
   .sel-tools { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 0.85rem; color: var(--muted); }
   .table-scroll { overflow-x: auto; }
+  .list-toggle { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border-strong); background: var(--card); color: var(--text); border-radius: 9px; padding: 6px 12px; font-size: 0.82rem; font-weight: 700; font-family: inherit; cursor: pointer; }
+  .list-toggle:hover { border-color: var(--muted); }
+  .list-toggle .ico { font-size: 1rem; color: var(--muted); }
+  .table-card.collapsed .table-top { border-bottom: none; }
+  /* Floating go-to-top / go-to-bottom of the track list */
+  .list-jump { position: fixed; right: 8px; bottom: 18px; z-index: 850; display: flex; flex-direction: column; gap: 8px; }
+  .list-jump[hidden] { display: none; }
+  .list-jump button { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--border-strong); background: var(--card); color: var(--indigo); box-shadow: 0 6px 18px rgba(15, 23, 42, 0.18); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; padding: 0; }
+  .list-jump button:hover { border-color: var(--indigo); }
+  .list-jump button:focus-visible { outline: 3px solid rgba(79, 70, 229, 0.35); outline-offset: 2px; }
+  .list-jump.raised { bottom: 76px; }
   table.tracks { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
   table.tracks th {
     text-align: left; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #475569;
@@ -481,6 +492,9 @@
     .table-card { background: transparent; border: none; box-shadow: none; overflow: visible; }
     .table-top { padding: 4px 2px 12px; border: none; }
     .table-top .hint { display: none; }
+    .list-jump { right: 12px !important; bottom: 12px; gap: 10px; }
+    .list-jump.raised { bottom: 70px; }
+    .list-jump button { width: 48px; height: 48px; }
     table.tracks thead { display: none; }
     table.tracks, table.tracks tbody, table.tracks tr, table.tracks td { display: block; width: 100%; }
     table.tracks tr { background: var(--card); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); margin-bottom: 12px; padding: 14px 14px 10px; position: relative; }
@@ -669,12 +683,13 @@
 
     <div class="card table-card">
       <div class="table-top">
-        <span class="count" id="result-count">Showing 0 of 0 broadcast tracks</span>
+        <span class="count" id="result-count">Showing 0 of 0 Total Tracks</span>
         <div class="sel-tools">
           <span class="hint">Click Spotify or YouTube Music to open</span>
+          <button type="button" class="list-toggle" id="list-toggle" aria-expanded="true" aria-controls="track-list-body"><span id="list-toggle-text">Hide list</span><span class="ico" id="list-toggle-ico" data-icon="up"></span></button>
         </div>
       </div>
-      <div class="table-scroll">
+      <div class="table-scroll" id="track-list-body">
         <table class="tracks" id="track-table">
           <thead>
             <tr>
@@ -756,6 +771,11 @@
     </div>
   </section>
 </main>
+
+<div class="list-jump" id="list-jump" hidden>
+  <button type="button" id="jump-top" aria-label="Go to the top of the track list" title="Top of the track list"><span class="ico" data-icon="up"></span></button>
+  <button type="button" id="jump-bottom" aria-label="Go to the end of the track list" title="End of the track list"><span class="ico" data-icon="down"></span></button>
+</div>
 
 <div class="selbar" id="selbar" hidden>
   <span id="selbar-text">0 selected</span>
@@ -1611,13 +1631,13 @@ function renderTable() {
   if (!db.tracks.length) {
     body.innerHTML = '<tr class="empty-row"><td colspan="9">Your library is empty. Use <b>Import</b> above to load your Sheet CSVs or restore a backup.</td></tr>';
   } else if (!list.length) {
-    body.innerHTML = '<tr class="empty-row"><td colspan="9">No broadcast tracks match your filters.</td></tr>';
+    body.innerHTML = '<tr class="empty-row"><td colspan="9">No tracks match your filters.</td></tr>';
   } else {
     const starts = importStarts(list);
     body.innerHTML = list.map((t, i) => trackRowHtml(t, sel.has(t.id), starts[i])).join('');
   }
   renderDateField();
-  $('#result-count').textContent = 'Showing ' + list.length + ' of ' + scopedTracks().length + ' broadcast tracks';
+  $('#result-count').textContent = 'Showing ' + list.length + ' of ' + scopedTracks().length + ' Total Tracks';
   $('#chk-all').checked = list.length > 0 && list.every((t) => sel.has(t.id));
   document.querySelectorAll('#track-table th.sortable').forEach((th) => {
     const old = th.querySelector('.arrow');
@@ -1993,6 +2013,7 @@ $('#show-cards').addEventListener('click', (e) => {
   $('#f-artist').value = $('#f-song').value = $('#f-type').value = $('#f-status').value = '';
   sortState = { key: 'position', dir: 'asc' };
   renderAll();
+  if (typeof setListOpen === 'function') setListOpen(true);
   switchView('songs');
   window.scrollTo({ top: $('#view-songs').offsetTop - 12, behavior: 'smooth' });
 });
@@ -3923,6 +3944,61 @@ function setupSuggest(kind) {
 setupSuggest('artist');
 setupSuggest('song');
 
+/* =========================================================
+   Track list: collapse toggle (remembered per device, never synced or backed up)
+   and floating go-to-top / go-to-bottom buttons. The buttons scroll the page to the
+   top or end of the track list (the list has no scrollbar of its own).
+   ========================================================= */
+const LIST_OPEN_KEY = STORE_KEY + '.trackListOpen';
+function listIsOpen() { return !$('#track-list-body').hidden; }
+function setListOpen(open, remember = true) {
+  $('#track-list-body').hidden = !open;
+  $('.table-card').classList.toggle('collapsed', !open);
+  $('#list-toggle').setAttribute('aria-expanded', open ? 'true' : 'false');
+  $('#list-toggle-text').textContent = open ? 'Hide list' : 'Show list';
+  $('#list-toggle-ico').innerHTML = open ? ICON.up : ICON.down;
+  if (remember) { try { localStorage.setItem(LIST_OPEN_KEY, open ? '1' : '0'); } catch (e) { /* storage unavailable */ } }
+  updateListJump();
+}
+$('#list-toggle').addEventListener('click', () => setListOpen(!listIsOpen()));
+
+let jumpQueued = false;
+function updateListJump() {
+  const jump = $('#list-jump'), card = $('.table-card');
+  if (!jump || !card) return;
+  const r = card.getBoundingClientRect();
+  const popupOpen = !$('#cal-pop').hidden || !$('#f-artist-list').hidden || !$('#f-song-list').hidden || !!document.querySelector('.modal-backdrop.open');
+  const show = currentView === 'songs' && listIsOpen() && lastRendered.length > 0 &&
+    card.offsetHeight > window.innerHeight * 1.2 && r.bottom > 0 && r.top < window.innerHeight && !popupOpen;
+  jump.hidden = !show;
+  if (!show) return;
+  jump.classList.toggle('raised', !$('#selbar').hidden);
+  // On wide screens, sit in the page margin beside the list instead of over it.
+  const gutter = document.documentElement.clientWidth - r.right;
+  jump.style.right = gutter >= 52 ? Math.round((gutter - 40) / 2) + 'px' : '';
+}
+function queueListJump() { if (jumpQueued) return; jumpQueued = true; requestAnimationFrame(() => { jumpQueued = false; updateListJump(); }); }
+window.addEventListener('scroll', queueListJump, { passive: true });
+window.addEventListener('resize', queueListJump);
+['#cal-pop', '#f-artist-list', '#f-song-list', '#selbar', '#track-body'].forEach((sel) => {
+  const el = $(sel);
+  if (el) new MutationObserver(queueListJump).observe(el, { attributes: sel !== '#track-body', attributeFilter: sel !== '#track-body' ? ['hidden'] : undefined, childList: sel === '#track-body' });
+});
+document.addEventListener('click', queueListJump);
+document.querySelectorAll('.tab').forEach((b) => b.addEventListener('click', queueListJump));
+$('#jump-top').addEventListener('click', () => {
+  const top = $('.table-card').getBoundingClientRect().top + window.scrollY - 12;
+  window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+});
+$('#jump-bottom').addEventListener('click', () => {
+  const bottom = $('.table-card').getBoundingClientRect().bottom + window.scrollY;
+  // Keep the last track clear of the buttons: if they float over the list, leave room for the whole stack.
+  const jump = $('#list-jump'), inGutter = !!jump.style.right;
+  const room = inGutter ? 24 : (window.innerHeight - jump.getBoundingClientRect().top) + 12;
+  window.scrollTo({ top: Math.max(0, bottom - window.innerHeight + room), behavior: 'smooth' });
+});
+try { if (localStorage.getItem(LIST_OPEN_KEY) === '0') setListOpen(false, false); } catch (e) { /* storage unavailable */ }
+
 // Resource-row logos reuse the header's embedded images.
 document.querySelectorAll('img[data-logo-from]').forEach((img) => { const src = document.querySelector(img.dataset.logoFrom); if (src) img.src = src.src; });
 // The resources box remembers whether you left it open or closed (this browser only).
@@ -3944,6 +4020,7 @@ spHandleRedirect();
 if (currentView === 'creator') aiFetchUsage(true);
 renderSyncSettings();
 if (syncState.on) syncNow();
+updateListJump();
 </script>
 </body>
 </html>
