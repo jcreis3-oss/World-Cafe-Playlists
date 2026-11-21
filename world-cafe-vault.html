@@ -273,6 +273,22 @@
   .playlist-card ol li span { color: var(--text); }
   .badge-amber { background: var(--amber-soft); color: var(--amber); font-size: 0.75rem; font-weight: 700; border-radius: 6px; padding: 2px 8px; }
   .placeholder-card { padding: 20px; border-style: dashed; box-shadow: none; background: #fbfcfe; }
+  .ai-panel { margin-top: 20px; }
+  .ai-panel h2 { flex-wrap: wrap; row-gap: 6px; }
+  .ai-panel h2 #ai-left { margin-left: auto; white-space: nowrap; font-size: 0.75rem; }
+  .ai-panel textarea { width: 100%; min-height: 84px; resize: vertical; }
+  .ai-controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin-top: 12px; }
+  .ai-controls label { display: flex; flex-direction: column; gap: 4px; font-size: 0.8rem; font-weight: 700; color: var(--muted); }
+  .ai-controls label.grow { flex: 1 1 200px; max-width: 320px; min-width: 0; }
+  .ai-controls select { width: 100%; min-width: 0; }
+  .ai-controls input[type="number"] { width: 90px; }
+  .ai-setup { background: var(--amber-soft); color: #92400e; border-radius: 10px; padding: 10px 12px; font-size: 0.88rem; margin-bottom: 12px; }
+  .ai-status { margin-top: 12px; color: var(--muted); }
+  .ai-status .warn { color: #92400e; background: var(--amber-soft); border-radius: 8px; padding: 6px 10px; display: block; margin-top: 6px; }
+  .ai-status .err { color: var(--danger); }
+  .ai-results .t div.meta { font-size: 0.8rem; color: var(--muted); }
+  .ai-results .t div.reason { font-size: 0.84rem; color: #475569; margin-top: 2px; }
+  .ai-notes { display: grid; gap: 6px; margin-top: 16px; padding: 12px 14px; background: #fbfcfe; border: 1px dashed var(--border-strong); border-radius: 10px; font-size: 0.82rem; color: #475569; }
 
   /* ---------- Spotify panels ---------- */
   .chips { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0; }
@@ -628,9 +644,27 @@
         <div id="saved-playlists"></div>
       </div>
     </div>
-    <div class="card placeholder-card" style="margin-top:20px">
-      <h2 style="font-size:1.05rem;font-weight:800;display:flex;gap:10px;align-items:center"><span class="ico" data-icon="sparkles" style="color:var(--amber)"></span>AI Playlist Builder</h2>
-      <p class="muted small" style="margin-top:4px">Describe a playlist in your own words and get suggested picks from your library, each with a reason. Arrives in Phase 4.</p>
+    <div class="card panel ai-panel" id="ai-panel">
+      <h2><span class="ico" data-icon="sparkles" style="color:var(--amber)"></span>AI Playlist Builder <span class="stat" id="ai-left" hidden></span></h2>
+      <p class="lead">Describe the playlist in your own words: genre, instruments, mood, subject, era, tempo, or anything else. Picks come only from tracks already in your library.</p>
+      <div class="ai-setup" id="ai-setup" hidden>Set up the AI relay first: open <b>Import, Connections &amp; Data</b> and fill in the <b>AI relay</b> section.</div>
+      <textarea id="ai-instruction" maxlength="2000" placeholder="For example: warm acoustic songs with fingerpicked guitar for a slow Sunday morning"></textarea>
+      <div class="ai-controls">
+        <label class="grow">Source<select id="ai-scope"></select></label>
+        <label>Tracks<input type="number" id="ai-target" min="1" max="50" value="15" inputmode="numeric"></label>
+        <button class="btn btn-indigo" id="ai-run"><span class="ico" data-icon="sparkles"></span>Suggest tracks</button>
+      </div>
+      <div class="ai-status small" id="ai-status"></div>
+      <ol class="builder-list ai-results" id="ai-results"></ol>
+      <div class="row" id="ai-actions" hidden>
+        <button class="btn btn-indigo btn-sm" id="ai-use">Use as selection</button>
+        <button class="btn btn-outline btn-sm" id="ai-add">Add to selection</button>
+        <button class="btn btn-soft btn-sm" id="ai-clear">Clear suggestions</button>
+      </div>
+      <div class="ai-notes">
+        <div><b>Suggestions, not guarantees.</b> The model reasons from each track's artist, song, album, source, type and notes plus its own general music knowledge. It cannot listen to the tracks or check tempo, lyrics or recording details.</div>
+        <div><b>Cost.</b> Each run costs a small amount on your pay-as-you-go Ollama plan. The relay caps runs per day.</div>
+      </div>
     </div>
   </section>
 </main>
@@ -686,6 +720,20 @@
         <button class="btn btn-indigo" id="yta-connect"><span class="ico" data-icon="ytmusic"></span>Connect YouTube</button>
       </div>
       <div class="small" id="yta-status" style="margin-top:8px"></div>
+    </div>
+
+    <div class="section" id="ai-connection">
+      <h3 style="display:flex;align-items:center;gap:8px"><span class="ico" data-icon="sparkles" style="color:var(--amber)"></span>AI relay (playlist builder)</h3>
+      <p>The AI Playlist Builder talks to your own Cloudflare Worker, which holds the Ollama key. Paste the Worker address and the app token once. Both are saved in this browser only; the token is never included in backups or written into the app file.</p>
+      <div class="row">
+        <input type="text" id="ai-url" placeholder="Worker address (https://…workers.dev)" autocomplete="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-bwignore="true" data-form-type="other" style="flex:1 1 280px;width:auto;font-family:ui-monospace,Consolas,monospace">
+      </div>
+      <div class="row" style="margin-top:8px">
+        <input type="text" id="ai-token" placeholder="App token" autocomplete="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-bwignore="true" data-form-type="other" style="flex:1 1 280px;width:auto;font-family:ui-monospace,Consolas,monospace;-webkit-text-security:disc">
+        <button class="btn btn-indigo" id="ai-save">Save</button>
+        <button class="btn btn-soft" id="ai-forget">Clear</button>
+      </div>
+      <div class="small" id="ai-conn-status" style="margin-top:8px"></div>
     </div>
 
     <div class="section">
@@ -1678,9 +1726,10 @@ async function deleteTrack(id) {
    Backup / restore / wipe
    ========================================================= */
 function backup() {
-  // The YouTube API key never leaves this browser: it is left out of backup files.
+  // The YouTube API key and the AI relay token never leave this browser: they are left out of backup files.
   const settings = Object.assign({}, db.settings);
   delete settings.youtubeApiKey;
+  delete settings.aiAppToken;
   downloadFile('world-cafe-vault-backup-' + todayIso() + '.json', JSON.stringify(Object.assign({ exportedAt: new Date().toISOString() }, db, { settings }), null, 2));
 }
 
@@ -1726,6 +1775,7 @@ function renderAll() {
   renderShows();
   renderLive();
   renderCreator();
+  renderAiPanel();
   renderSelectionUi();
 }
 
@@ -3014,6 +3064,219 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('#con
 $('#btn-import').addEventListener('click', () => { renderSpotifyStatus(); renderYtStatus(); renderYtaStatus(); });
 $('#yt-clear').addEventListener('click', () => { delete db.settings.youtubeApiKey; saveDb(); renderYtStatus(); toast('YouTube API key removed from this browser'); });
 
+/* =========================================================
+   AI Playlist Builder. The app calls your own Cloudflare Worker (the relay), which
+   holds the Ollama key and calls Ollama Cloud. The app token lives in this browser's
+   storage only and is left out of backups. Every pick is checked against the library.
+   ========================================================= */
+const AI_SCOPES = ['All sources'].concat(SOURCES);
+let aiBusy = false;
+let aiUsage = null;      // { left, limit } as last reported by the relay
+let aiUsageAt = 0;
+
+function aiConfigured() { return !!(db.settings.aiWorkerUrl && db.settings.aiAppToken); }
+function aiEndpoint(path) { return db.settings.aiWorkerUrl.replace(/\/+$/, '') + path; }
+function aiCleanNotes(n) {
+  return String(n || '').replace(SEARCH_ONLY_NOTE, '').replace(/\b(Spotify|YouTube): studio version\.?/gi, '').replace(/\s+/g, ' ').trim();
+}
+function aiScopeTracks(scope) { return scope === 'All sources' ? db.tracks : db.tracks.filter((t) => t.source === scope); }
+
+function renderAiPanel() {
+  const sel = $('#ai-scope');
+  const keep = sel.value || (db.aiResults && db.aiResults.scope) || $('#f-source').value || 'All sources';
+  sel.innerHTML = AI_SCOPES.map((s) => '<option value="' + escapeHtml(s) + '">' + escapeHtml(s) + ' (' + aiScopeTracks(s).length + ')</option>').join('');
+  sel.value = AI_SCOPES.includes(keep) ? keep : 'All sources';
+
+  const ready = aiConfigured();
+  $('#ai-setup').hidden = ready;
+  $('#ai-run').disabled = aiBusy || !ready;
+  $('#ai-run').lastChild.textContent = aiBusy ? 'Thinking…' : 'Suggest tracks';
+  const left = $('#ai-left');
+  left.hidden = !(ready && aiUsage);
+  if (ready && aiUsage) left.textContent = aiUsage.left + ' of ' + aiUsage.limit + ' runs left today';
+
+  const r = db.aiResults;
+  const picks = r ? r.picks.filter((p) => trackById(p.trackId)) : [];
+  $('#ai-results').innerHTML = picks.map((p, i) => {
+    const t = trackById(p.trackId);
+    return '<li data-id="' + t.id + '"><span class="n">' + (i + 1) + '</span>' +
+      '<div class="t"><div><b>' + escapeHtml(t.song) + '</b> · ' + escapeHtml(t.artist) + '</div>' +
+      '<div class="meta">' + escapeHtml(t.source + ' · ' + (t.showLabel || t.showDate)) + (t.type === LIVE ? ' · ★ live' : '') + '</div>' +
+      (p.reason ? '<div class="reason">' + escapeHtml(p.reason) + '</div>' : '') + '</div>' +
+      '<button class="icon-btn" data-op="up" aria-label="Move up">' + icon('up') + '</button>' +
+      '<button class="icon-btn" data-op="down" aria-label="Move down">' + icon('down') + '</button>' +
+      '<button class="icon-btn del" data-op="remove" aria-label="Remove">' + icon('x') + '</button></li>';
+  }).join('');
+  $('#ai-actions').hidden = !picks.length;
+
+  if (aiBusy) return; // the status line shows progress while a run is going
+  const st = $('#ai-status');
+  if (!r) { st.innerHTML = ''; return; }
+  const rep = r.report || {};
+  const warn = [];
+  if (rep.invented && rep.invented.length) warn.push('The model returned ' + rep.invented.length + ' pick' + (rep.invented.length === 1 ? '' : 's') + ' that ' + (rep.invented.length === 1 ? 'is' : 'are') + ' not in your library (' + rep.invented.map((x) => '"' + x + '"').join(', ') + '); removed.');
+  if (rep.dupes) warn.push(rep.dupes + ' repeated pick' + (rep.dupes === 1 ? '' : 's') + ' removed.');
+  if (rep.extra) warn.push(rep.extra + ' pick' + (rep.extra === 1 ? '' : 's') + ' beyond your target length trimmed.');
+  st.innerHTML = escapeHtml(r.picks.length + ' of ' + r.target + ' suggested from ' + r.scope + ' for "' + r.instruction + '"' + (r.model ? ' · ' + r.model : '')) +
+    (r.picks.length ? ' · <span class="status ok">' + icon('checkCircle') + 'all ' + r.picks.length + ' are library tracks</span>' : '') +
+    warn.map((w) => '<span class="warn">' + escapeHtml(w) + '</span>').join('');
+}
+
+async function aiFetchUsage(force) {
+  if (!aiConfigured()) return { ok: false, message: 'Not set up.' };
+  if (!force && Date.now() - aiUsageAt < 60000) return { ok: true };
+  aiUsageAt = Date.now();
+  try {
+    const res = await fetch(aiEndpoint('/usage'), { headers: { 'X-App-Token': db.settings.aiAppToken }, cache: 'no-store' });
+    const d = await res.json().catch(() => ({}));
+    if (res.ok) { aiUsage = { left: d.left, limit: d.limit }; renderAiPanel(); return { ok: true }; }
+    aiUsage = null; renderAiPanel();
+    return { ok: false, message: res.status === 401 ? 'The relay refused the app token.' : (d.error || 'The relay answered HTTP ' + res.status + '.') };
+  } catch (e) {
+    return { ok: false, message: 'Could not reach the relay. Check the Worker address.' };
+  }
+}
+
+function aiErrorText(status, d) {
+  if (status === 429) return 'Daily limit reached on the relay (' + (d.limit || '') + ' runs). It resets at midnight UTC.';
+  if (status === 401) return 'The relay refused the app token. Check it in Import, Connections & Data.';
+  if (status === 403) return 'The relay does not accept requests from this page\'s address.';
+  return d.error || ('The relay answered HTTP ' + status + '.');
+}
+
+async function aiRun() {
+  if (aiBusy) return;
+  if (!aiConfigured()) { toast('Set up the AI relay first.', 'error'); return; }
+  const instruction = $('#ai-instruction').value.trim();
+  if (!instruction) { toast('Describe the playlist first.', 'error'); $('#ai-instruction').focus(); return; }
+  const target = Math.min(50, Math.max(1, parseInt($('#ai-target').value, 10) || 15));
+  $('#ai-target').value = target;
+  const scope = $('#ai-scope').value;
+  const pool = aiScopeTracks(scope);
+  if (!pool.length) { toast('No tracks in that source.', 'error'); return; }
+
+  // Short ids (t1, t2 …) keep the request small and make every answer easy to check.
+  const byShort = new Map(pool.map((t, i) => ['t' + (i + 1), t]));
+  const candidates = pool.map((t, i) => ({ id: 't' + (i + 1), artist: t.artist, song: t.song, album: t.album || '', source: t.source, type: t.type || '', notes: aiCleanNotes(t.notes) }));
+
+  aiBusy = true;
+  renderAiPanel();
+  $('#ai-status').innerHTML = escapeHtml('Asking the model to choose from ' + pool.length + ' tracks… this can take up to a minute.');
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 150000);
+  let res = null, d = {}, failure = '';
+  try {
+    res = await fetch(aiEndpoint('/pick'), {
+      method: 'POST', cache: 'no-store', signal: ctrl.signal,
+      headers: { 'Content-Type': 'application/json', 'X-App-Token': db.settings.aiAppToken },
+      body: JSON.stringify({ instruction, scope, target, candidates })
+    });
+    d = await res.json().catch(() => ({}));
+    if (!res.ok) failure = aiErrorText(res.status, d);
+  } catch (e) {
+    failure = e.name === 'AbortError' ? 'The model took too long to answer. Try again.' : 'Could not reach the relay. Check your connection and the Worker address.';
+  } finally {
+    clearTimeout(timer);
+    aiBusy = false;
+  }
+  if (typeof d.left === 'number') { aiUsage = { left: d.left, limit: d.limit || (aiUsage && aiUsage.limit) || d.left }; aiUsageAt = Date.now(); }
+  if (failure) {
+    renderAiPanel();
+    $('#ai-status').innerHTML = '<span class="err">' + escapeHtml(failure) + '</span>';
+    return;
+  }
+
+  // Validate every pick against the library.
+  const seen = new Set(), picks = [], invented = [];
+  let dupes = 0, extra = 0;
+  (Array.isArray(d.picks) ? d.picks : []).forEach((p) => {
+    const raw = String((p && p.id) || '').trim();
+    const t = byShort.get(raw.toLowerCase());
+    if (!t) { invented.push(raw.slice(0, 40) || '(blank)'); return; }
+    if (seen.has(t.id)) { dupes++; return; }
+    if (picks.length >= target) { extra++; return; }
+    seen.add(t.id);
+    picks.push({ trackId: t.id, reason: String(p.reason || '').trim().slice(0, 300) });
+  });
+  db.aiResults = { instruction, scope, target, model: d.model || '', at: new Date().toISOString(), picks, report: { invented, dupes, extra } };
+  saveDb();
+  renderAiPanel();
+  if (!picks.length) toast('The model found no matching tracks. Try rewording.', 'error');
+}
+
+function aiPickIds() { return db.aiResults ? db.aiResults.picks.map((p) => p.trackId).filter((id) => trackById(id)) : []; }
+
+$('#ai-run').addEventListener('click', aiRun);
+$('#ai-results').addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-op]');
+  const li = e.target.closest('li[data-id]');
+  if (!btn || !li || !db.aiResults) return;
+  const list = db.aiResults.picks;
+  const i = list.findIndex((p) => p.trackId === li.dataset.id);
+  if (i < 0) return;
+  const op = btn.dataset.op;
+  if (op === 'remove') list.splice(i, 1);
+  if (op === 'up' && i > 0) [list[i - 1], list[i]] = [list[i], list[i - 1]];
+  if (op === 'down' && i < list.length - 1) [list[i + 1], list[i]] = [list[i], list[i + 1]];
+  saveDb();
+  renderAiPanel();
+});
+function aiSuggestName() {
+  if ($('#pl-name').value.trim() || !db.aiResults) return;
+  const ins = db.aiResults.instruction;
+  $('#pl-name').value = 'AI: ' + (ins.length > 60 ? ins.slice(0, 57).trim() + '…' : ins);
+}
+$('#ai-use').addEventListener('click', () => {
+  const ids = aiPickIds();
+  if (!ids.length) return;
+  db.selection = ids;
+  afterSelectionChange();
+  aiSuggestName();
+  toast('Selection replaced with ' + ids.length + ' suggested tracks. Name it and press Save playlist.', 'ok');
+  window.scrollTo({ top: $('#view-creator').offsetTop - 12, behavior: 'smooth' });
+});
+$('#ai-add').addEventListener('click', () => {
+  const ids = aiPickIds().filter((id) => !db.selection.includes(id));
+  db.selection = db.selection.concat(ids);
+  afterSelectionChange();
+  aiSuggestName();
+  toast(ids.length ? 'Added ' + ids.length + ' tracks to the selection' : 'All suggested tracks are already in the selection', 'ok');
+});
+$('#ai-clear').addEventListener('click', () => { delete db.aiResults; saveDb(); renderAiPanel(); });
+
+/* ---------- AI relay settings ---------- */
+function renderAiConnStatus(message, ok) {
+  const has = aiConfigured();
+  $('#ai-url').value = db.settings.aiWorkerUrl || '';
+  $('#ai-token').value = '';
+  $('#ai-token').placeholder = db.settings.aiAppToken ? 'Token saved (hidden). Paste a new one to replace it.' : 'App token';
+  let html = has ? '<span class="status ok">' + icon('checkCircle') + 'Relay address and token saved in this browser</span>' : '<span class="muted">Not set up.</span>';
+  if (has && aiUsage) html += ' <span class="muted">· ' + aiUsage.left + ' of ' + aiUsage.limit + ' runs left today</span>';
+  if (message) html += '<div style="margin-top:4px;color:' + (ok ? 'var(--spotify-text)' : 'var(--danger)') + '">' + escapeHtml(message) + '</div>';
+  $('#ai-conn-status').innerHTML = html;
+}
+$('#ai-save').addEventListener('click', async () => {
+  const url = $('#ai-url').value.trim();
+  const token = $('#ai-token').value.trim();
+  if (!/^https:\/\/[A-Za-z0-9.-]+\.[A-Za-z]{2,}(\/[^\s]*)?$/.test(url)) { toast('The Worker address should start with https://', 'error'); return; }
+  if (!token && !db.settings.aiAppToken) { toast('Paste the app token too.', 'error'); return; }
+  if (token && !/^[A-Za-z0-9_-]{20,200}$/.test(token)) { toast('That does not look like the app token (letters and numbers, 20 or more).', 'error'); return; }
+  db.settings.aiWorkerUrl = url.replace(/\/+$/, '');
+  if (token) db.settings.aiAppToken = token;
+  saveDb();
+  renderAiConnStatus('Checking the relay…', true);
+  const r = await aiFetchUsage(true);
+  renderAiConnStatus(r.ok ? 'The relay answered and accepted the token.' : r.message, r.ok);
+  renderAiPanel();
+});
+$('#ai-forget').addEventListener('click', () => {
+  delete db.settings.aiWorkerUrl; delete db.settings.aiAppToken; aiUsage = null;
+  saveDb(); renderAiConnStatus(); renderAiPanel();
+  toast('AI relay address and token removed from this browser');
+});
+$('#btn-import').addEventListener('click', () => renderAiConnStatus());
+$('.tab[data-view="creator"]').addEventListener('click', () => aiFetchUsage(false));
+
 // Resource-row logos reuse the header's embedded images.
 document.querySelectorAll('img[data-logo-from]').forEach((img) => { const src = document.querySelector(img.dataset.logoFrom); if (src) img.src = src.src; });
 
@@ -3026,6 +3289,7 @@ try {
 } catch (e) { switchView('songs'); }
 renderSpotifyStatus();
 spHandleRedirect();
+if (currentView === 'creator') aiFetchUsage(true);
 </script>
 </body>
 </html>
