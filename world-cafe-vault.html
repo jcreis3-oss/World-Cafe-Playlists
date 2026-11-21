@@ -404,6 +404,32 @@
   code { font-family: ui-monospace, Consolas, monospace; font-size: 0.8rem; background: var(--pill); padding: 1px 6px; border-radius: 5px; word-break: break-all; }
 
   /* ---------- Selection bar ---------- */
+  /* In-app player dock (Spotify iFrame API / YouTube IFrame Player API) */
+  .player-dock { position: fixed; left: 16px; bottom: 16px; z-index: 880; width: 400px; max-width: calc(100vw - 32px); background: var(--card); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 18px 44px rgba(15, 23, 42, 0.22); overflow: hidden; }
+  .player-dock[hidden] { display: none; }
+  .pd-head { display: flex; align-items: center; gap: 8px; padding: 8px 8px 8px 12px; border-bottom: 1px solid var(--border); }
+  .pd-head .ico { font-size: 1.05rem; flex: none; }
+  .pd-head .pd-src.sp { color: var(--spotify); } .pd-head .pd-src.yt { color: var(--yt); }
+  .pd-title { flex: 1; min-width: 0; font-size: 0.82rem; line-height: 1.25; }
+  .pd-title b, .pd-title span { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pd-title span { color: var(--muted); }
+  .pd-open { flex: none; font-size: 0.75rem; font-weight: 700; text-decoration: none; border-radius: 999px; padding: 4px 10px; white-space: nowrap; }
+  .pd-open.sp { color: var(--spotify-text); background: var(--spotify-soft); border: 1px solid var(--spotify-line); }
+  .pd-open.yt { color: var(--yt-text); background: var(--yt-soft); border: 1px solid var(--yt-line); }
+  .pd-btn { flex: none; width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border); background: var(--card); color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1rem; padding: 0; }
+  .pd-btn:hover { color: var(--text); border-color: var(--border-strong); }
+  .pd-btn[hidden] { display: none; }
+  #pd-sp-wrap iframe { display: block; width: 100%; height: 152px; border: 0; }
+  .player-dock.min #pd-sp-wrap iframe { height: 80px; }
+  #pd-yt-wrap { position: relative; width: 100%; aspect-ratio: 16 / 9; min-height: 200px; background: #000; }
+  #pd-yt-wrap iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+  .pd-msg { padding: 10px 12px; font-size: 0.82rem; color: #92400e; background: var(--amber-soft); border-top: 1px solid #fcd9a5; }
+  .pd-msg[hidden] { display: none; }
+  .stream.playing { position: relative; box-shadow: 0 0 0 2px currentColor; }
+  .stream.playing::after { content: "▶ Playing"; position: absolute; top: -9px; right: -6px; font-size: 0.62rem; font-weight: 800; line-height: 1; padding: 2px 6px; border-radius: 999px; color: #fff; white-space: nowrap; pointer-events: none; }
+  .stream.sp.playing::after { background: var(--spotify-text); }
+  .stream.yt.playing::after { background: var(--yt-text); }
+  body.has-dock main.container { padding-bottom: calc(140px + var(--dock-h, 0px)); }
   .selbar {
     position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 900; display: flex; align-items: center; gap: 12px;
     background: #0f172a; color: #fff; border-radius: 999px; padding: 8px 8px 8px 18px; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.25);
@@ -536,6 +562,9 @@
     .live-list .links { width: 100%; justify-content: flex-start; padding-left: 30px; }
     .live-list .stream { margin: 2px 6px 2px 0; }
     .selbar { bottom: 12px; font-size: 0.85rem; white-space: nowrap; }
+    .player-dock { left: 0; right: 0; bottom: 0; width: 100%; max-width: none; border-radius: 14px 14px 0 0; border-bottom: none; }
+    .pd-btn { width: 40px; height: 40px; }
+    .pd-open { padding: 6px 10px; }
     .selbar .long { display: none; }
     .toast-wrap { bottom: 74px; }
 
@@ -790,6 +819,19 @@
     </div>
   </section>
 </main>
+
+<div class="player-dock" id="player-dock" role="region" aria-label="Now playing" hidden>
+  <div class="pd-head">
+    <span class="pd-src" id="pd-src"></span>
+    <div class="pd-title"><b id="pd-song"></b><span id="pd-artist"></span></div>
+    <a class="pd-open" id="pd-open" href="#" target="_blank" rel="noopener noreferrer"></a>
+    <button type="button" class="pd-btn" id="pd-min" aria-label="Minimize the player" title="Minimize"></button>
+    <button type="button" class="pd-btn" id="pd-close" aria-label="Close the player and stop playback" title="Close"><span class="ico" data-icon="x"></span></button>
+  </div>
+  <div id="pd-sp-wrap" hidden><div id="pd-sp"></div></div>
+  <div id="pd-yt-wrap" hidden><div id="pd-yt"></div></div>
+  <div class="pd-msg" id="pd-msg" role="status" hidden></div>
+</div>
 
 <div class="list-jump" id="list-jump" hidden>
   <button type="button" id="jump-top" aria-label="Go to the top of the track list" title="Top of the track list"><span class="ico" data-icon="up"></span></button>
@@ -4105,6 +4147,192 @@ function onPlaylistChip(e) {
   return true;
 }
 ['#track-body', '#live-cards', '#builder-list'].forEach((sel) => $(sel).addEventListener('click', onPlaylistChip, true));
+
+/* =========================================================
+   In-app player: one docked player for Spotify (iFrame API embed) and YouTube
+   (IFrame Player API). A plain click on a direct track link plays it here; Ctrl/Cmd/
+   Shift/middle-click and search-only links still open the site in a new tab.
+   The player scripts load only on the first play. Nothing is stored except whether
+   the dock is minimized (this device only; never synced or backed up).
+   ========================================================= */
+const PLAYER_MIN_KEY = STORE_KEY + '.playerMin';
+const player = { kind: '', trackId: '', sp: null, spLoading: null, yt: null, ytLoading: null, ytPending: '', spDuration: 0 };
+
+function loadScriptOnce(src) {
+  return new Promise((resolve, reject) => {
+    const tag = document.createElement('script');
+    tag.src = src; tag.async = true; tag.onerror = () => reject(new Error('Could not load ' + src));
+    document.body.appendChild(tag);
+    tag.dataset.loaded = '1';
+    resolve();
+  });
+}
+function spotifyReady(firstUri) {
+  if (player.sp) return Promise.resolve(player.sp);
+  if (!player.spLoading) {
+    player.spLoading = new Promise((resolve, reject) => {
+      window.onSpotifyIframeApiReady = (IFrameAPI) => {
+        IFrameAPI.createController($('#pd-sp'), { uri: firstUri, width: '100%', height: 152 }, (controller) => {
+          player.sp = controller;
+          controller.addListener('playback_update', (e) => {
+            const d = e && e.data;
+            if (!d) return;
+            player.spDuration = d.duration || player.spDuration;
+            // Spotify plays a preview clip (under 30 s) when it cannot stream the full song.
+            if (player.kind === 'sp' && d.duration > 0 && d.duration <= 31000) showPlayerMsg('Spotify is playing a 30-second preview here. Full songs need this browser signed in to Spotify and allowed to use Spotify cookies inside other sites; otherwise use "Open in Spotify".');
+            else if (player.kind === 'sp' && d.duration > 31000) hidePlayerMsg();
+          });
+          resolve(controller);
+        });
+      };
+      loadScriptOnce('https://open.spotify.com/embed/iframe-api/v1').catch(reject);
+    });
+  }
+  return player.spLoading;
+}
+function youtubeReady() {
+  if (player.yt) return Promise.resolve(player.yt);
+  if (!player.ytLoading) {
+    player.ytLoading = new Promise((resolve, reject) => {
+      window.onYouTubeIframeAPIReady = () => {
+        const yt = new YT.Player('pd-yt', {
+          width: '100%', height: '100%', videoId: player.ytPending,
+          playerVars: { playsinline: 1, autoplay: 1, rel: 0, enablejsapi: 1, origin: location.origin },
+          events: {
+            onReady: (e) => { player.yt = yt; e.target.playVideo(); resolve(yt); },
+            onError: (e) => {
+              const why = { 2: 'The video link is not valid.', 5: 'This video cannot play in this browser\'s player.', 100: 'This video was removed or made private.',
+                101: 'The owner of this video does not allow it to play inside other apps.', 150: 'The owner of this video does not allow it to play inside other apps.',
+                153: 'YouTube could not identify this page, so it would not play the video here.' }[e.data] || 'YouTube could not play this video here (error ' + e.data + ').';
+              showPlayerMsg(why + ' Use "Open in YouTube Music" to play it there.');
+            },
+            onAutoplayBlocked: () => showPlayerMsg('Your browser blocked automatic playback. Tap play in the video to start.'),
+            onStateChange: (e) => { if (e.data === 1) hidePlayerMsg(); }
+          }
+        });
+      };
+      loadScriptOnce('https://www.youtube.com/iframe_api').catch(reject);
+    });
+  }
+  return player.ytLoading;
+}
+
+function showPlayerMsg(text) { const m = $('#pd-msg'); m.textContent = text; m.hidden = false; updateDockOffsets(); }
+function hidePlayerMsg() { $('#pd-msg').hidden = true; updateDockOffsets(); }
+
+function setDockMin(min) {
+  const dock = $('#player-dock');
+  const canMin = player.kind === 'sp';
+  dock.classList.toggle('min', min && canMin);
+  $('#pd-min').hidden = !canMin;
+  $('#pd-min').innerHTML = icon(min && canMin ? 'up' : 'down');
+  $('#pd-min').setAttribute('aria-label', min && canMin ? 'Expand the player' : 'Minimize the player');
+  try { localStorage.setItem(PLAYER_MIN_KEY, min ? '1' : '0'); } catch (e) { /* storage unavailable */ }
+  updateDockOffsets();
+}
+function playerMinPref() { try { return localStorage.getItem(PLAYER_MIN_KEY) === '1'; } catch (e) { return false; } }
+
+function showDock(kind, t) {
+  player.kind = kind; player.trackId = t.id;
+  const dock = $('#player-dock');
+  dock.hidden = false;
+  document.body.classList.add('has-dock');
+  $('#pd-src').className = 'pd-src ' + kind;
+  $('#pd-src').innerHTML = icon(kind === 'sp' ? 'spotify' : 'ytmusic');
+  $('#pd-song').textContent = t.song;
+  $('#pd-artist').textContent = t.artist;
+  const open = $('#pd-open');
+  open.className = 'pd-open ' + kind;
+  open.textContent = kind === 'sp' ? 'Open in Spotify' : 'Open in YouTube Music';
+  open.href = safeUrl(kind === 'sp' ? t.spotifyUrl : t.youtubeUrl) || '#';
+  $('#pd-sp-wrap').hidden = kind !== 'sp';
+  $('#pd-yt-wrap').hidden = kind !== 'yt';
+  hidePlayerMsg();
+  setDockMin(playerMinPref());
+  markPlaying();
+}
+
+async function playTrack(kind, t) {
+  showDock(kind, t);
+  try {
+    if (kind === 'sp') {
+      if (player.yt && player.yt.pauseVideo) player.yt.pauseVideo();
+      const uri = 'spotify:track:' + spTrackId(t);
+      const c = await spotifyReady(uri);
+      if (player.kind !== 'sp' || player.trackId !== t.id) return;       // another click came in meanwhile
+      player.spDuration = 0;
+      if (c.loadEntity) c.loadEntity(uri); else c.loadUri(uri);
+      c.play();
+    } else {
+      if (player.sp && player.sp.pause) player.sp.pause();
+      const id = ytVideoId(t.youtubeUrl);
+      player.ytPending = id;
+      if (player.yt) player.yt.loadVideoById(id);
+      else await youtubeReady();
+    }
+  } catch (e) {
+    showPlayerMsg('The player could not load. Check your connection, or use the Open button.');
+  }
+}
+
+function closePlayer() {
+  try { if (player.sp && player.sp.pause) player.sp.pause(); } catch (e) { /* ignore */ }
+  try { if (player.yt && player.yt.pauseVideo) player.yt.pauseVideo(); } catch (e) { /* ignore */ }
+  player.kind = ''; player.trackId = '';
+  $('#player-dock').hidden = true;
+  document.body.classList.remove('has-dock');
+  markPlaying();
+  updateDockOffsets();
+}
+
+// "▶ Playing" marker on the link of the track that is loaded in the dock.
+function markPlaying() {
+  document.querySelectorAll('.stream.playing').forEach((a) => a.classList.remove('playing'));
+  if (!player.trackId) return;
+  document.querySelectorAll('[data-id="' + CSS.escape(player.trackId) + '"] .stream.' + player.kind).forEach((a) => a.classList.add('playing'));
+}
+
+// Keep the selection bar, the top/bottom buttons and toasts above the dock, and give the page
+// enough bottom room that the last track can scroll clear of it.
+function updateDockOffsets() {
+  const dock = $('#player-dock');
+  const open = !dock.hidden;
+  const r = open ? dock.getBoundingClientRect() : null;
+  document.body.style.setProperty('--dock-h', open ? Math.ceil(r.height) + 'px' : '0px');
+  ['#selbar', '#list-jump', '#toasts'].forEach((sel) => {
+    const el = $(sel);
+    if (!el) return;
+    if (!open) { el.style.marginBottom = ''; return; }
+    el.style.marginBottom = '';
+    const b = el.getBoundingClientRect();
+    const overlaps = !(b.right <= r.left || b.left >= r.right) || el.hidden || b.width === 0;
+    el.style.marginBottom = overlaps ? Math.ceil(r.height) + 'px' : '';
+  });
+}
+window.addEventListener('resize', () => { if (!$('#player-dock').hidden) updateDockOffsets(); });
+new MutationObserver(() => { if (!$('#player-dock').hidden) updateDockOffsets(); }).observe($('#selbar'), { attributes: true, attributeFilter: ['hidden'] });
+['#track-body', '#live-cards'].forEach((sel) => new MutationObserver(markPlaying).observe($(sel), { childList: true }));
+
+// Plain clicks on direct links play in the dock; everything else behaves as before.
+document.addEventListener('click', (e) => {
+  const a = e.target.closest('a.stream');
+  if (!a || e.defaultPrevented) return;
+  if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;   // new tab / window as usual
+  const holder = a.closest('[data-id]');
+  const t = holder && trackById(holder.dataset.id);
+  if (!t) return;
+  const kind = a.classList.contains('sp') ? 'sp' : 'yt';
+  const playable = kind === 'sp' ? !a.classList.contains('search') && !!spTrackId(t) : !!ytVideoId(t.youtubeUrl);
+  if (!playable) {
+    toast(kind === 'sp' ? 'No direct Spotify track yet; opened a Spotify search in a new tab.' : 'No direct YouTube video yet; opened a YouTube Music search in a new tab.');
+    return;   // the link opens in a new tab as before
+  }
+  e.preventDefault();
+  playTrack(kind, t);
+});
+$('#pd-close').addEventListener('click', closePlayer);
+$('#pd-min').addEventListener('click', () => setDockMin(!$('#player-dock').classList.contains('min')));
+new ResizeObserver(() => { if (!$('#player-dock').hidden) updateDockOffsets(); }).observe($('#player-dock'));
 
 // Resource-row logos reuse the header's embedded images.
 document.querySelectorAll('img[data-logo-from]').forEach((img) => { const src = document.querySelector(img.dataset.logoFrom); if (src) img.src = src.src; });
