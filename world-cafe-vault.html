@@ -282,8 +282,26 @@
   .pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; white-space: nowrap; }
   .pill-type { background: var(--pill); color: #1e293b; }
   .pill-live { background: var(--blue-soft); color: var(--blue); }
-  .src-tag { font-size: 0.72rem; font-weight: 700; color: #475569; background: var(--pill); border-radius: 6px; padding: 1px 7px; }
+  .src-tag { font-size: 0.72rem; font-weight: 700; color: #475569; background: var(--pill); border-radius: 6px; padding: 1px 7px; white-space: nowrap; }
   .src-tag.wc { color: var(--wc-red); background: var(--wc-red-soft); }
+  .src-tag.ootb { color: #d9541e; background: #fdf0ea; }
+  /* Out of the Box import */
+  .ootb-modes { display: grid; gap: 8px; margin: 6px 0 10px; }
+  .ootb-modes label { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 0.9rem; }
+  .ootb-modes input[type="radio"] { width: 18px; height: 18px; accent-color: var(--indigo); }
+  .ootb-modes input[type="number"] { width: 72px; padding: 6px 8px; }
+  .ootb-modes input[type="date"] { width: auto; padding: 6px 8px; }
+  .ootb-bar { height: 8px; border-radius: 999px; background: var(--pill); overflow: hidden; margin: 10px 0 6px; }
+  .ootb-bar span { display: block; height: 100%; width: 0; background: #d9541e; transition: width 0.2s; }
+  .ootb-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin: 10px 0; }
+  .ootb-table th, .ootb-table td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+  .ootb-table .new { color: var(--spotify-text); font-weight: 700; }
+  .ootb-table .skip { color: var(--muted); }
+  .ootb-meter { height: 10px; border-radius: 999px; background: var(--pill); overflow: hidden; margin: 6px 0; }
+  .ootb-meter span { display: block; height: 100%; background: var(--indigo); }
+  .ootb-meter span.over { background: var(--danger); }
+  .ootb-warn { color: #92400e; background: var(--amber-soft); border-radius: 8px; padding: 6px 10px; font-size: 0.82rem; margin: 6px 0; }
+  .ai-scope-note { font-size: 0.8rem; color: #92400e; margin-top: 8px; }
   .air { font-size: 0.75rem; color: var(--muted); }
 
   .stream { display: inline-flex; align-items: center; gap: 7px; padding: 5px 12px; border-radius: 8px; font-size: 0.88rem; font-weight: 600; text-decoration: none; border: 1px solid; margin: 2px 8px 2px 0; white-space: nowrap; }
@@ -805,6 +823,7 @@
         <label>Tracks<input type="number" id="ai-target" min="1" max="50" value="15" inputmode="numeric"></label>
         <button class="btn btn-indigo" id="ai-run"><span class="ico" data-icon="sparkles"></span>Suggest tracks</button>
       </div>
+      <div class="ai-scope-note" id="ai-scope-note" hidden></div>
       <div class="ai-status small" id="ai-status"></div>
       <ol class="builder-list ai-results" id="ai-results"></ol>
       <div class="row" id="ai-actions" hidden>
@@ -921,9 +940,25 @@
       <div class="small" id="ai-conn-status" style="margin-top:8px"></div>
     </div>
 
+    <div class="section" id="ootb-import">
+      <h3 style="display:flex;align-items:center;gap:8px"><span class="src-tag ootb">Out of the Box</span> Import from the WHRO archive</h3>
+      <p>Adds Out of the Box playlists from WHRO's public archive (Mon–Thu 7–9 pm, Sat 1–5 pm ET, since 2019). Shows already in your library are skipped, and nothing already in your library is changed. You see a preview before anything is saved.</p>
+      <div class="ootb-modes" role="radiogroup" aria-label="What to import">
+        <label><input type="radio" name="ootb-mode" value="latest" checked> Latest <input type="number" id="ootb-n" value="5" min="1" max="22" inputmode="numeric" aria-label="Number of shows"> shows</label>
+        <label><input type="radio" name="ootb-mode" value="range"> Date range <input type="date" id="ootb-from" aria-label="From"> to <input type="date" id="ootb-to" aria-label="To"> <span class="small muted">(up to 31 days)</span></label>
+      </div>
+      <div class="row">
+        <button class="btn btn-indigo" id="ootb-check">Check shows</button>
+        <button class="btn btn-soft" id="ootb-cancel" hidden>Cancel</button>
+        <button class="btn btn-soft" id="ootb-undo" hidden>Undo last import</button>
+      </div>
+      <div id="ootb-progress" hidden><div class="ootb-bar"><span id="ootb-bar-fill"></span></div><div class="small" id="ootb-progress-text" role="status"></div></div>
+      <div id="ootb-preview"></div>
+    </div>
+
     <div class="section">
       <h3>Live feeds</h3>
-      <p>World Cafe daily, XPN2 hourly and Out of the Box imports arrive in a later phase.</p>
+      <p>World Cafe daily and XPN2 hourly imports arrive in a later phase. Out of the Box can be imported above.</p>
     </div>
 
     <div class="section">
@@ -1568,7 +1603,7 @@ function statusHtml(t) {
 }
 
 function sourceTag(source) {
-  return '<span class="src-tag' + (source === 'World Cafe' ? ' wc' : '') + '">' + escapeHtml(source) + '</span>';
+  return '<span class="src-tag' + (source === 'World Cafe' ? ' wc' : source === 'Out of the Box' ? ' ootb' : '') + '">' + escapeHtml(source) + '</span>';
 }
 
 /* =========================================================
@@ -1662,7 +1697,7 @@ function trackRowHtml(t, selected, startsImport) {
     '<td class="c-title"><div class="song">' + escapeHtml(t.song) + '</div><div class="artist">' + escapeHtml(t.artist) + '</div>' +
       (t.album ? '<div class="album">' + escapeHtml(t.album) + '</div>' : '') + inPl + '</td>' +
     '<td class="c-date">' + escapeHtml(t.showLabel || labelFromIso(t.showDate)) +
-      '<div class="meta">' + sourceTag(t.source) + (t.airTime ? '<span class="air">' + escapeHtml(t.airTime) + '</span>' : '') + '</div></td>' +
+      '<div class="meta">' + sourceTag(t.source) + (t.airedAt ? '<span class="air">aired ' + escapeHtml(t.airedAt) + '</span>' : t.airTime ? '<span class="air">' + escapeHtml(t.airTime) + '</span>' : '') + '</div></td>' +
     '<td class="c-type">' + typePill + '</td>' +
     '<td class="c-links">' + streamLinks(t) + '</td>' +
     '<td class="c-status">' + statusHtml(t) + '</td>' +
@@ -1753,7 +1788,7 @@ function renderShows() {
       '<div class="stats"><span class="stat">' + n + ' tracks</span>' +
         (live ? '<span class="stat blue">★ ' + live + ' live</span>' : '') +
         '<span class="stat green">' + Math.round(100 * direct / n) + '% direct Spotify</span></div>' +
-      (notes ? '<div class="notes">' + escapeHtml(notes) + '</div>' : '') +
+      (notes ? '<div class="notes">' + escapeHtml(notes).replace(/https:\/\/mediaplayer\.whro\.org\/[^\s<]+/g, (u) => '<a href="' + u + '" target="_blank" rel="noopener noreferrer">Open on WHRO</a>') + '</div>' : '') +
       '<div class="foot"><button class="btn btn-outline btn-sm" data-show="' + escapeHtml(g.source + '|' + g.showDate) + '">' + icon('listMusic') + 'View tracks</button></div>' +
       '</article>';
   }).join('');
@@ -2704,7 +2739,7 @@ function ytCountSearch() { ytAddUnits(100); }
 function renderYtStatus() {
   const has = !!db.settings.youtubeApiKey;
   $('#yt-status').innerHTML = has
-    ? '<span class="status ok">' + icon('checkCircle') + 'Key saved in this browser</span> <span class="muted">· ' + ytUsedToday() + ' of ~' + YT_DAILY_SEARCHES + ' searches used today (resets at midnight Pacific)</span>'
+    ? '<span class="status ok">' + icon('checkCircle') + 'Key saved in this browser</span> <span class="muted">· ' + ytUsedToday() + ' of ~' + YT_DAILY_SEARCHES + ' searches used today, ' + ytSearchesLeft() + ' left (resets at midnight Pacific)</span>'
     : '<span class="muted">No key saved.</span>';
   $('#yt-key').value = '';
   $('#yt-key').placeholder = has ? 'Key saved (hidden). Paste a new one to replace it.' : 'YouTube Data API key';
@@ -2953,7 +2988,7 @@ function renderResolveYouTube() {
       : '<button class="btn btn-indigo" id="yt-run"' + (hasKey && pending ? '' : ' disabled') + '>' + icon('wand') + 'Run on ' + pending + ' track' + (pending === 1 ? '' : 's') + '</button>' +
         (remaining.length ? '<button class="btn btn-outline" id="yt-resume">Resume ' + remaining.length + ' left from last run</button>' : '')) +
     (hasKey ? '' : '<button class="btn btn-outline" id="yt-connect">' + icon('ytmusic') + 'Add your API key first</button>') +
-    '<span class="muted small">Scope: ' + escapeHtml(ytScopeLabel()) + ' · ' + used + ' of ~' + YT_DAILY_SEARCHES + ' searches used today</span></div>';
+    '<span class="muted small">Scope: ' + escapeHtml(ytScopeLabel()) + ' · ' + used + ' of ~' + YT_DAILY_SEARCHES + ' searches used today, ' + ytSearchesLeft() + ' left</span></div>';
   if (pending > YT_DAILY_SEARCHES - used && !st.running) {
     html += '<p class="small" style="color:var(--amber);margin-top:8px">This view needs ' + pending + ' searches and about ' + Math.max(0, YT_DAILY_SEARCHES - used) +
       ' are left today. The run stops cleanly at the limit; use Resume after midnight Pacific (3 AM Eastern).</p>';
@@ -3329,12 +3364,26 @@ function aiCleanNotes(n) {
   return String(n || '').replace(SEARCH_ONLY_NOTE, '').replace(/\b(Spotify|YouTube): studio version\.?/gi, '').replace(/\s+/g, ' ').trim();
 }
 function aiScopeTracks(scope) { return scope === 'All sources' ? db.tracks : db.tracks.filter((t) => t.source === scope); }
+// The relay accepts at most 1,500 candidates per run; larger scopes use the most recent 1,500 tracks.
+const AI_MAX_CANDIDATES = 1500;
+function aiCandidatePool(scope) {
+  const all = aiScopeTracks(scope);
+  if (all.length <= AI_MAX_CANDIDATES) return all;
+  return all.slice().sort((a, b) => (b.showDate + (b.airTime || '')).localeCompare(a.showDate + (a.airTime || '')) || (a.position || 0) - (b.position || 0)).slice(0, AI_MAX_CANDIDATES);
+}
+function renderAiScopeNote() {
+  const n = aiScopeTracks($('#ai-scope').value).length;
+  const el = $('#ai-scope-note');
+  el.hidden = n <= AI_MAX_CANDIDATES;
+  el.textContent = 'This source has ' + n.toLocaleString() + ' tracks; the AI will choose from the most recent ' + AI_MAX_CANDIDATES.toLocaleString() + '.';
+}
 
 function renderAiPanel() {
   const sel = $('#ai-scope');
   const keep = sel.value || (db.aiResults && db.aiResults.scope) || $('#f-source').value || 'All sources';
   sel.innerHTML = AI_SCOPES.map((s) => '<option value="' + escapeHtml(s) + '">' + escapeHtml(s) + ' (' + aiScopeTracks(s).length + ')</option>').join('');
   sel.value = AI_SCOPES.includes(keep) ? keep : 'All sources';
+  renderAiScopeNote();
 
   const ready = aiConfigured();
   $('#ai-setup').hidden = ready;
@@ -3401,7 +3450,7 @@ async function aiRun() {
   const target = Math.min(50, Math.max(1, parseInt($('#ai-target').value, 10) || 15));
   $('#ai-target').value = target;
   const scope = $('#ai-scope').value;
-  const pool = aiScopeTracks(scope);
+  const pool = aiCandidatePool(scope);
   if (!pool.length) { toast('No tracks in that source.', 'error'); return; }
 
   // Short ids (t1, t2 …) keep the request small and make every answer easy to check.
@@ -4333,6 +4382,216 @@ document.addEventListener('click', (e) => {
 $('#pd-close').addEventListener('click', closePlayer);
 $('#pd-min').addEventListener('click', () => setDockMin(!$('#player-dock').classList.contains('min')));
 new ResizeObserver(() => { if (!$('#player-dock').hidden) updateDockOffsets(); }).observe($('#player-dock'));
+
+/* =========================================================
+   Out of the Box import (WHRO public archive). Episodes are read one at a time from
+   WHRO's public media API (about two requests a second). Shows already in the library
+   are skipped; existing tracks are never edited. A preview and a size meter come
+   before anything is saved, and the last import can be undone.
+   ========================================================= */
+const OOTB = 'Out of the Box';
+const OOTB_API = 'https://mediaapi.whro.org/episodes/';
+const OOTB_PAGE = 'https://mediaplayer.whro.org/program/outofthebox/e/';
+const OOTB_UNDO_KEY = STORE_KEY + '.ootbUndo';
+const SYNC_SIZE_LIMIT = 1900000;     // a synced copy can be at most about 1.9 MB
+const WEEKDAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+let ootbRun = null;                  // { cancelled } while checking
+let ootbFound = [];                  // shows from the last check
+
+function ootbOrdinal(d) { const v = d % 100; return d + (v >= 11 && v <= 13 ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' }[d % 10] || 'th')); }
+function ootbSlug(iso) {
+  const [y, m, d] = iso.split('-').map(Number);
+  const wd = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+  return 'outofthebox-' + WEEKDAY_NAMES[wd] + '-' + MONTH_NAMES[m - 1].toLowerCase() + '-' + ootbOrdinal(d) + '-' + y;
+}
+function ootbAirs(iso) { const [y, m, d] = iso.split('-').map(Number); const wd = new Date(Date.UTC(y, m - 1, d)).getUTCDay(); return wd >= 1 && wd <= 4 || wd === 6; }
+function ootbSlot(iso) { const [y, m, d] = iso.split('-').map(Number); return new Date(Date.UTC(y, m - 1, d)).getUTCDay() === 6 ? '1:00-5:00 PM ET' : '7:00-9:00 PM ET'; }
+function isoAddDays(iso, n) { const [y, m, d] = iso.split('-').map(Number); const dt = new Date(Date.UTC(y, m - 1, d + n)); return isoFromYMD(dt.getUTCFullYear(), dt.getUTCMonth() + 1, dt.getUTCDate()); }
+const ootbClean = (s) => String(s == null ? '' : s).replace(/[\s ]+/g, ' ').trim();   // trim + collapse doubled spaces only
+function ootbAired(t) { const m = /^0?(\d{1,2}):(\d{2})\s*([ap]m)$/i.exec(ootbClean(t)); return m ? m[1] + ':' + m[2] + ' ' + m[3].toLowerCase() : ootbClean(t); }
+function ootbHasShow(iso) { return db.shows.some((s) => s.source === OOTB && s.showDate === iso) || db.tracks.some((t) => t.source === OOTB && t.showDate === iso); }
+
+// Reads one episode. Returns null when there is no episode that day, or its playlist entries.
+async function ootbFetchEpisode(iso) {
+  const res = await fetch(OOTB_API + ootbSlug(iso) + '/assets/all', { cache: 'no-store' });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error('WHRO answered HTTP ' + res.status);
+  const j = await res.json().catch(() => null);
+  const assets = (j && j.results && j.results.assets) || [];
+  if (!assets.length) return null;
+  const seen = new Set(), rows = [];
+  assets.filter((a) => !a.type || a.type === 'full_length').forEach((a) => {
+    let pl = [];
+    try { pl = JSON.parse(a.playlist || '[]'); } catch (e) { pl = []; }
+    pl.forEach((r) => {
+      const artist = ootbClean(r.artist), song = ootbClean(r.song);
+      if (!artist && !song) return;
+      const k = norm(artist) + '|' + norm(song) + '|' + ootbClean(r.time);
+      if (seen.has(k)) return;                    // the same entry repeated across split parts
+      seen.add(k);
+      rows.push({ artist, song, album: ootbClean(r.album), airedAt: ootbAired(r.time) });
+    });
+  });
+  return rows;
+}
+
+function ootbProgress(done, total, text) {
+  $('#ootb-progress').hidden = false;
+  $('#ootb-bar-fill').style.width = (total ? Math.round(done / total * 100) : 0) + '%';
+  $('#ootb-progress-text').textContent = text;
+}
+
+function ootbDatesToCheck() {
+  const mode = document.querySelector('input[name="ootb-mode"]:checked').value;
+  if (mode === 'latest') {
+    const n = Math.min(22, Math.max(1, parseInt($('#ootb-n').value, 10) || 5));
+    $('#ootb-n').value = n;
+    const out = []; let d = todayIso();
+    for (let i = 0; i < 45 && out.length < n + 3; i++) { if (ootbAirs(d)) out.push(d); d = isoAddDays(d, -1); }   // a few extra in case today's playlist is not posted yet
+    return { mode, n, dates: out };
+  }
+  const from = $('#ootb-from').value, to = $('#ootb-to').value;
+  if (!from || !to) throw new Error('Choose both dates.');
+  if (from > to) throw new Error('The start date is after the end date.');
+  if (isoAddDays(from, 30) < to) throw new Error('Choose at most 31 days per import.');
+  if (from < '2019-01-01') throw new Error('The WHRO archive starts on Jan 1, 2019.');
+  const out = []; for (let d = from; d <= to; d = isoAddDays(d, 1)) if (ootbAirs(d)) out.push(d);
+  return { mode, dates: out.reverse() };
+}
+
+async function ootbCheck() {
+  let plan;
+  try { plan = ootbDatesToCheck(); } catch (e) { toast(e.message, 'error'); return; }
+  ootbRun = { cancelled: false };
+  ootbFound = [];
+  $('#ootb-preview').innerHTML = '';
+  $('#ootb-check').disabled = true; $('#ootb-cancel').hidden = false;
+  const total = plan.dates.length;
+  let checked = 0, failed = 0;
+  for (const iso of plan.dates) {
+    if (ootbRun.cancelled) break;
+    if (plan.mode === 'latest' && ootbFound.filter((x) => x.rows && x.rows.length).length >= plan.n) break;
+    const nf = ootbFound.filter((x) => x.rows && x.rows.length).length;
+    ootbProgress(checked, total, 'Checking ' + labelFromIso(iso) + '… (' + nf + ' show' + (nf === 1 ? '' : 's') + ' found)');
+    const entry = { iso, exists: ootbHasShow(iso), rows: null };
+    try { entry.rows = await ootbFetchEpisode(iso); } catch (e) { entry.error = e.message; failed++; }
+    if (entry.rows || entry.error) ootbFound.push(entry);
+    checked++;
+    await sleep(450);                              // about two requests a second
+  }
+  const wasCancelled = ootbRun.cancelled;
+  ootbRun = null;
+  $('#ootb-check').disabled = false; $('#ootb-cancel').hidden = true;
+  ootbProgress(total, total, (wasCancelled ? 'Stopped. ' : 'Done. ') + 'Checked ' + checked + ' day' + (checked === 1 ? '' : 's') + (failed ? ', ' + failed + ' could not be read' : '') + '.');
+  renderOotbPreview();
+}
+
+function ootbBuild() {
+  const now = new Date().toISOString();
+  const shows = [], tracks = [];
+  ootbFound.filter((x) => !x.exists && x.rows && x.rows.length).forEach((x) => {
+    const label = labelFromIso(x.iso), slot = ootbSlot(x.iso);
+    shows.push({ id: newId('s'), source: OOTB, showDate: x.iso, showLabel: label, airTime: slot, featuredGuest: '',
+      headerNote: 'with Paul Shugrue · WHRO archive', listedCount: x.rows.length,
+      archiveNotes: 'WHRO episode: ' + OOTB_PAGE + ootbSlug(x.iso) });
+    x.rows.forEach((r, i) => tracks.push({ id: newId('t'), source: OOTB, showDate: x.iso, showLabel: label, airTime: slot, airedAt: r.airedAt,
+      position: i + 1, artist: r.artist, song: r.song, album: r.album, featuredGuest: '', type: 'Studio Track', linkStatus: SEARCH,
+      spotifyUrl: spotifySearchUrl(r.artist, r.song), youtubeUrl: youtubeSearchUrl(r.artist, r.song), notes: '', addedAt: now }));
+  });
+  return { shows, tracks };
+}
+function librarySizeWith(extra) {
+  const copy = Object.assign({}, db, { tracks: db.tracks.concat(extra.tracks), shows: db.shows.concat(extra.shows), settings: Object.assign({}, db.settings) });
+  SYNC_LOCAL_ONLY.forEach((k) => delete copy.settings[k]);
+  return new TextEncoder().encode(JSON.stringify(copy)).length;
+}
+const mb = (n) => (n / 1000000).toFixed(2) + ' MB';
+
+function renderOotbPreview() {
+  const box = $('#ootb-preview');
+  if (!ootbFound.length) { box.innerHTML = '<p class="small muted">No Out of the Box playlists were found for those days.</p>'; return; }
+  const extra = ootbBuild();
+  const before = librarySizeWith({ tracks: [], shows: [] }), after = librarySizeWith(extra);
+  const over = after > SYNC_SIZE_LIMIT;
+  // Possible duplicates from other sources (same artist, song and date).
+  const others = new Set(db.tracks.filter((t) => t.source !== OOTB).map((t) => norm(t.artist) + '|' + norm(t.song) + '|' + t.showDate));
+  const dupes = extra.tracks.filter((t) => others.has(norm(t.artist) + '|' + norm(t.song) + '|' + t.showDate));
+  const rows = ootbFound.slice().sort((a, b) => b.iso.localeCompare(a.iso)).map((x) => {
+    const n = x.rows ? x.rows.length : 0;
+    const status = x.error ? '<span class="skip">Could not read (' + escapeHtml(x.error) + ')</span>'
+      : x.exists ? '<span class="skip">Already in library, skipped</span>'
+      : !n ? '<span class="skip">No playlist posted yet</span>' : '<span class="new">New</span>';
+    return '<tr><td>' + escapeHtml(labelFromIso(x.iso)) + '</td><td>' + escapeHtml(ootbSlot(x.iso)) + '</td><td>' + n + '</td><td>' + status + '</td></tr>';
+  }).join('');
+  const pct = Math.min(100, Math.round(after / SYNC_SIZE_LIMIT * 100));
+  box.innerHTML =
+    '<table class="ootb-table"><thead><tr><th>Show</th><th>Time</th><th>Tracks</th><th>Status</th></tr></thead><tbody>' + rows + '</tbody></table>' +
+    (dupes.length ? '<div class="ootb-warn">' + dupes.length + ' track' + (dupes.length === 1 ? ' matches' : 's match') + ' a track from another source on the same date (for example "' + escapeHtml(dupes[0].song) + '"). They will still be imported.</div>' : '') +
+    '<div class="small">Library size after import: <b>' + mb(after) + '</b> of ' + mb(SYNC_SIZE_LIMIT) + ' (now ' + mb(before) + ')</div>' +
+    '<div class="ootb-meter" aria-hidden="true"><span class="' + (over ? 'over' : '') + '" style="width:' + pct + '%"></span></div>' +
+    (over ? '<div class="ootb-warn">Too large to sync. Choose a shorter date range.</div>' : '') +
+    '<label class="small" style="display:flex;align-items:center;gap:8px;margin:8px 0"><input type="checkbox" id="ootb-backup" checked> Download a backup first</label>' +
+    '<div class="row"><button class="btn btn-indigo" id="ootb-import-go"' + (extra.shows.length && !over ? '' : ' disabled') + '>' + (extra.shows.length ? 'Import ' + extra.shows.length + ' show' + (extra.shows.length === 1 ? '' : 's') + ' (' + extra.tracks.length + ' tracks)' : 'Nothing new to import') + '</button></div>';
+}
+
+async function ootbImport() {
+  const extra = ootbBuild();
+  if (!extra.shows.length) return;
+  if (librarySizeWith(extra) > SYNC_SIZE_LIMIT) { toast('Too large to sync. Choose a shorter range.', 'error'); return; }
+  if ($('#ootb-backup') && $('#ootb-backup').checked) backup();
+  // Automatic undo copy (this device only): the ids added, plus the library as it was.
+  try {
+    localStorage.setItem(OOTB_UNDO_KEY, JSON.stringify({ at: new Date().toISOString(), trackIds: extra.tracks.map((t) => t.id), showIds: extra.shows.map((s) => s.id),
+      dates: extra.shows.map((s) => s.showDate), tracks: extra.tracks.length }));
+  } catch (e) { /* storage unavailable: the synced saved copies still allow a restore */ }
+  db.shows = db.shows.concat(extra.shows);
+  db.tracks = db.tracks.concat(extra.tracks);
+  saveDb();
+  renderAll();
+  ootbFound = [];
+  $('#ootb-preview').innerHTML = '<p class="small"><span class="status ok">' + icon('checkCircle') + 'Imported ' + extra.shows.length + ' show' + (extra.shows.length === 1 ? '' : 's') + ' and ' + extra.tracks.length + ' tracks.</span> Use Source: Out of the Box to see them.</p>';
+  renderOotbUndo();
+  toast('Imported ' + extra.shows.length + ' Out of the Box shows (' + extra.tracks.length + ' tracks)', 'ok');
+}
+
+function ootbUndoInfo() { try { return JSON.parse(localStorage.getItem(OOTB_UNDO_KEY) || 'null'); } catch (e) { return null; } }
+function renderOotbUndo() {
+  const u = ootbUndoInfo();
+  const still = u ? db.tracks.filter((t) => u.trackIds.includes(t.id)).length : 0;
+  $('#ootb-undo').hidden = !still;
+  if (still) $('#ootb-undo').textContent = 'Undo last import (' + still + ' tracks)';
+}
+async function ootbUndo() {
+  const u = ootbUndoInfo();
+  if (!u) return;
+  const ids = new Set(u.trackIds), sids = new Set(u.showIds);
+  const inPl = db.playlists.filter((p) => p.items.some((i) => ids.has(i.trackId))).length;
+  const ok = await confirmDialog('Undo last Out of the Box import?',
+    'Removes the ' + db.tracks.filter((t) => ids.has(t.id)).length + ' tracks and ' + db.shows.filter((s) => sids.has(s.id)).length + ' shows added on ' + new Date(u.at).toLocaleString() + '. Nothing else in your library changes.' +
+    (inPl ? '\n\nSome of these tracks are in ' + inPl + ' saved playlist(s); they will be kept there as text.' : ''), 'Undo import');
+  if (!ok) return;
+  const gone = db.tracks.filter((t) => ids.has(t.id));
+  db.playlists.forEach((p) => p.items.forEach((i) => {
+    if (ids.has(i.trackId)) { const t = gone.find((x) => x.id === i.trackId); delete i.trackId; i.artist = t.artist; i.song = t.song; }
+  }));
+  db.selection = db.selection.filter((id) => !ids.has(id));
+  db.tracks = db.tracks.filter((t) => !ids.has(t.id));
+  db.shows = db.shows.filter((s) => !sids.has(s.id));
+  saveDb();
+  try { localStorage.removeItem(OOTB_UNDO_KEY); } catch (e) { /* ignore */ }
+  renderAll();
+  renderOotbUndo();
+  toast('Import undone', 'ok');
+}
+
+$('#ootb-check').addEventListener('click', ootbCheck);
+$('#ootb-cancel').addEventListener('click', () => { if (ootbRun) ootbRun.cancelled = true; });
+$('#ootb-undo').addEventListener('click', ootbUndo);
+$('#ootb-preview').addEventListener('click', (e) => { if (e.target.id === 'ootb-import-go') ootbImport(); });
+['#ootb-from', '#ootb-to'].forEach((sel) => $(sel).addEventListener('change', () => { document.querySelector('input[name="ootb-mode"][value="range"]').checked = true; }));
+$('#ootb-n').addEventListener('input', () => { document.querySelector('input[name="ootb-mode"][value="latest"]').checked = true; });
+$('#btn-import').addEventListener('click', () => { renderOotbUndo(); const t = todayIso(); $('#ootb-to').max = t; $('#ootb-from').max = t; $('#ootb-from').min = '2019-01-01'; });
+$('#ai-scope').addEventListener('change', renderAiScopeNote);
 
 // Resource-row logos reuse the header's embedded images.
 document.querySelectorAll('img[data-logo-from]').forEach((img) => { const src = document.querySelector(img.dataset.logoFrom); if (src) img.src = src.src; });
