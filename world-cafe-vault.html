@@ -180,7 +180,7 @@
   .panel-title { display: flex; align-items: center; gap: 10px; font-size: 1.05rem; font-weight: 700; }
   .panel-title .ico { color: var(--blue); font-size: 1.15rem; }
   .panel-actions { display: flex; gap: 10px; flex-wrap: wrap; }
-  .filters { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 14px; }
+  .filters { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 14px; }
   .field { position: relative; }
   .field .ico { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--faint); font-size: 1rem; pointer-events: none; }
   .field input { padding-left: 40px; }
@@ -334,6 +334,21 @@
   .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
   .builder-list { list-style: none; margin: 8px 0 14px; border-top: 1px solid var(--border); }
   .builder-list li { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid #eef1f5; }
+  /* "In playlists": amber left bar + chip line */
+  .in-pl { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin-top: 5px; font-size: 0.75rem; color: #92400e; }
+  .in-pl .lbl { font-weight: 700; }
+  .pl-chip { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; border: 1px solid #fcd9a5; background: var(--amber-soft); color: #92400e; border-radius: 999px; padding: 1px 9px; font-size: 0.75rem; font-weight: 700; font-family: inherit; cursor: pointer; text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pl-chip:hover, .pl-chip:focus-visible { border-color: var(--amber); outline: none; }
+  .pl-exp { display: inline-flex; width: 20px; height: 20px; align-items: center; justify-content: center; border-radius: 50%; font-size: 0.8rem; text-decoration: none; }
+  .pl-exp.sp { color: var(--spotify-text); background: var(--spotify-soft); }
+  .pl-exp.yt { color: var(--yt-text); background: var(--yt-soft); }
+  .pl-chip .ico { font-size: 0.85rem; }
+  table.tracks tbody tr.pl-member td:first-child { box-shadow: inset 4px 0 0 var(--amber); }
+  .live-list li.pl-member, .builder-list li.pl-member { box-shadow: inset 4px 0 0 var(--amber); padding-left: 10px; }
+  .live-list li.pl-member { flex-wrap: wrap; row-gap: 0; }
+  .live-list li > .in-pl { flex: 1 1 100%; margin: 0 0 0 30px; }
+  .builder-list .t div.meta { font-size: 0.8rem; color: var(--muted); }
+  .playlist-card.flash { box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.45); transition: box-shadow 0.3s; }
   .builder-list .n { width: 26px; text-align: right; color: var(--muted); font-size: 0.85rem; flex: none; }
   .builder-list .t { flex: 1; min-width: 0; }
   .builder-list .t b { font-weight: 700; }
@@ -502,6 +517,8 @@
     table.tracks td, table.tracks tbody tr:hover td, table.tracks tbody tr.selected td { border: none; padding: 3px 0; background: transparent; }
     table.tracks tbody tr.import-start td { border-top: none; }
     table.tracks tbody tr.import-start { border-top: 3px solid var(--indigo); }
+    table.tracks tbody tr.pl-member td:first-child { box-shadow: none; }
+    table.tracks tbody tr.pl-member { box-shadow: inset 4px 0 0 var(--amber), var(--shadow); }
     .c-check { position: absolute; top: 14px; right: 14px; width: auto; padding: 0 !important; }
     .c-num { display: none !important; }
     .c-title { padding-right: 34px !important; font-size: 1rem; }
@@ -671,6 +688,7 @@
           <option value="Live Session (*)">Live Session (*)</option>
         </select>
         <select id="f-source" aria-label="Source"><option value="">All Sources</option></select>
+        <select id="f-inpl" aria-label="Playlist membership"><option value="">All Playlists</option><option value="in">In a playlist</option><option value="out">Not in a playlist</option></select>
         <select id="f-sort" class="mobile-only" aria-label="Sort">
           <option value="showDate:desc">Newest first</option>
           <option value="showDate:asc">Oldest first</option>
@@ -1520,7 +1538,8 @@ function currentFilters(skip) {
     fa: skip === 'artist' ? '' : norm($('#f-artist').value),
     fs: skip === 'song' ? '' : norm($('#f-song').value),
     date: skip === 'date' ? '' : $('#f-date').value,
-    type: $('#f-type').value, status: $('#f-status').value
+    type: $('#f-type').value, status: $('#f-status').value,
+    inpl: $('#f-inpl').value, inplSet: $('#f-inpl').value ? playlistTrackIds() : null
   };
 }
 function passesFilters(t, f) {
@@ -1529,6 +1548,8 @@ function passesFilters(t, f) {
   if (f.status && t.linkStatus !== f.status) return false;
   if (f.fa && !norm(t.artist + ' ' + (t.featuredGuest || '')).includes(f.fa)) return false;
   if (f.fs && !norm(t.song + ' ' + (t.album || '')).includes(f.fs)) return false;
+  if (f.inpl === 'in' && !f.inplSet.has(t.id)) return false;
+  if (f.inpl === 'out' && f.inplSet.has(t.id)) return false;
   return true;
 }
 function tracksExcept(skip) { const f = currentFilters(skip); return scopedTracks().filter((t) => passesFilters(t, f)); }
@@ -1590,12 +1611,13 @@ function renderMetricsAndCounts() {
 
 function trackRowHtml(t, selected, startsImport) {
   const typePill = t.type === LIVE ? '<span class="pill pill-live">★ Live Session</span>' : '<span class="pill pill-type">Studio Track</span>';
-  const cls = [selected ? 'selected' : '', startsImport ? 'import-start' : ''].filter(Boolean).join(' ');
+  const inPl = membershipHtml(t.id);
+  const cls = [selected ? 'selected' : '', startsImport ? 'import-start' : '', inPl ? 'pl-member' : ''].filter(Boolean).join(' ');
   return '<tr data-id="' + t.id + '"' + (cls ? ' class="' + cls + '"' : '') + '>' +
     '<td class="c-check"><input type="checkbox" class="row-check" ' + (selected ? 'checked' : '') + ' aria-label="Select ' + escapeHtml(t.song + ' by ' + t.artist) + '"></td>' +
     '<td class="c-num">' + (t.position || '—') + '</td>' +
     '<td class="c-title"><div class="song">' + escapeHtml(t.song) + '</div><div class="artist">' + escapeHtml(t.artist) + '</div>' +
-      (t.album ? '<div class="album">' + escapeHtml(t.album) + '</div>' : '') + '</td>' +
+      (t.album ? '<div class="album">' + escapeHtml(t.album) + '</div>' : '') + inPl + '</td>' +
     '<td class="c-date">' + escapeHtml(t.showLabel || labelFromIso(t.showDate)) +
       '<div class="meta">' + sourceTag(t.source) + (t.airTime ? '<span class="air">' + escapeHtml(t.airTime) + '</span>' : '') + '</div></td>' +
     '<td class="c-type">' + typePill + '</td>' +
@@ -1715,9 +1737,9 @@ function renderLive() {
       (meta.sessionLabel ? '<div class="session">' + escapeHtml(meta.sessionLabel) + '</div>' : '') +
       '<div class="stats"><span class="stat blue">★ ' + g.tracks.length + ' live track' + (g.tracks.length === 1 ? '' : 's') + '</span></div>' +
       '<ul class="live-list">' + g.tracks.map((t) =>
-        '<li data-id="' + t.id + '"><input type="checkbox" class="row-check" ' + (sel.has(t.id) ? 'checked' : '') + ' aria-label="Select ' + escapeHtml(t.song) + '">' +
+        '<li data-id="' + t.id + '"' + (membershipFor(t.id).length ? ' class="pl-member"' : '') + '><input type="checkbox" class="row-check" ' + (sel.has(t.id) ? 'checked' : '') + ' aria-label="Select ' + escapeHtml(t.song) + '">' +
         '<div class="t"><b>' + escapeHtml(t.song) + '</b>' + (norm(t.artist) !== norm(name) ? '<span>' + escapeHtml(t.artist) + '</span>' : '') + '</div>' +
-        '<div class="links">' + streamLinks(t) + '</div></li>').join('') + '</ul>' +
+        '<div class="links">' + streamLinks(t) + '</div>' + membershipHtml(t.id) + '</li>').join('') + '</ul>' +
       '</article>';
   }).join('');
 }
@@ -1735,9 +1757,9 @@ function renderCreator() {
   $('#builder-empty').style.display = sel.length ? 'none' : '';
   $('#creator-count').textContent = sel.length + ' track' + (sel.length === 1 ? '' : 's');
   $('#builder-list').innerHTML = sel.map((t, i) =>
-    '<li data-id="' + t.id + '"><span class="n">' + (i + 1) + '</span>' +
+    '<li data-id="' + t.id + '"' + (membershipFor(t.id).length ? ' class="pl-member"' : '') + '><span class="n">' + (i + 1) + '</span>' +
     '<div class="t"><div><b>' + escapeHtml(t.song) + '</b> · ' + escapeHtml(t.artist) + '</div>' +
-    '<div>' + escapeHtml(t.source + ' · ' + (t.showLabel || t.showDate)) + (t.type === LIVE ? ' · ★ live' : '') + '</div></div>' +
+    '<div class="meta">' + escapeHtml(t.source + ' · ' + (t.showLabel || t.showDate)) + (t.type === LIVE ? ' · ★ live' : '') + '</div>' + membershipHtml(t.id) + '</div>' +
     '<button class="icon-btn" data-op="up" aria-label="Move up">' + icon('up') + '</button>' +
     '<button class="icon-btn" data-op="down" aria-label="Move down">' + icon('down') + '</button>' +
     '<button class="icon-btn del" data-op="remove" aria-label="Remove">' + icon('x') + '</button></li>').join('');
@@ -1773,6 +1795,7 @@ function savePlaylist() {
   saveDb();
   $('#pl-name').value = '';
   renderCreator();
+  renderTable(); renderLive();   // refresh the "In playlists" markers
   toast('Saved "' + name + '" (' + db.selection.length + ' tracks)', 'ok');
 }
 
@@ -1967,7 +1990,7 @@ document.querySelectorAll('[data-icon]').forEach((el) => { el.innerHTML = ICON[e
 document.querySelectorAll('.tab').forEach((b) => b.addEventListener('click', () => switchView(b.dataset.view)));
 
 ['#f-artist', '#f-song'].forEach((s) => $(s).addEventListener('input', renderTable));
-['#f-date', '#f-type', '#f-status'].forEach((s) => $(s).addEventListener('change', renderTable));
+['#f-date', '#f-type', '#f-status', '#f-inpl'].forEach((s) => $(s).addEventListener('change', renderTable));
 $('#f-source').addEventListener('change', () => { renderTable(); renderShows(); renderLive(); });
 $('#f-sort').addEventListener('change', (e) => {
   const [key, dir] = e.target.value.split(':');
@@ -2010,7 +2033,7 @@ $('#show-cards').addEventListener('click', (e) => {
   const [source, date] = btn.dataset.show.split('|');
   $('#f-source').value = source;
   $('#f-date').value = date;
-  $('#f-artist').value = $('#f-song').value = $('#f-type').value = $('#f-status').value = '';
+  $('#f-artist').value = $('#f-song').value = $('#f-type').value = $('#f-status').value = $('#f-inpl').value = '';
   sortState = { key: 'position', dir: 'asc' };
   renderAll();
   if (typeof setListOpen === 'function') setListOpen(true);
@@ -2081,7 +2104,7 @@ $('#saved-playlists').addEventListener('click', async (e) => {
   if (act === 'delete') {
     if (await confirmDialog('Delete playlist?', '"' + p.name + '" (' + p.items.length + ' tracks). The tracks stay in your library.', 'Delete')) {
       db.playlists = db.playlists.filter((x) => x.id !== p.id);
-      saveDb(); renderCreator();
+      saveDb(); renderCreator(); renderTable(); renderLive();
     }
   }
 });
@@ -2530,9 +2553,10 @@ async function spExport() {
       total = (check.tracks && check.tracks.total) ?? (check.items && check.items.total) ?? null;
     } catch (e) { /* the count check is informational */ }
     spLastExport = { id: pl.id, name, url: (pl.external_urls && pl.external_urls.spotify) || 'https://open.spotify.com/playlist/' + pl.id, added: uris.length, total, skipped, removed: false, isPrivate };
-    db.spotifyExports = (db.spotifyExports || []).concat({ id: pl.id, name, url: spLastExport.url, added: uris.length, at: new Date().toISOString() });
+    db.spotifyExports = (db.spotifyExports || []).concat({ id: pl.id, name, url: spLastExport.url, added: uris.length, at: new Date().toISOString(),
+      trackIds: direct.map((t) => t.id), fromPlaylistId: savedPlaylistMatching(sel.map((t) => t.id)) });
     saveDb();
-    renderSpExport();
+    renderSpExport(); renderTable(); renderLive();
     toast('Created "' + name + '" with ' + uris.length + ' tracks', 'ok');
   } catch (e) {
     renderSpExport('<span style="color:var(--danger)">Export failed: ' + escapeHtml(e.message) + '</span>');
@@ -2558,7 +2582,7 @@ async function spRemoveExport() {
     x.removed = true;
     db.spotifyExports = (db.spotifyExports || []).filter((p) => p.id !== x.id);
     saveDb();
-    renderSpExport();
+    renderSpExport(); renderTable(); renderLive();
     toast('Removed "' + x.name + '" from Spotify', 'ok');
   } catch (e) { toast('Could not remove it: ' + e.message, 'error'); }
 }
@@ -3121,14 +3145,14 @@ async function ytExport() {
     units += YT_UNITS.playlistInsert; ytAddUnits(YT_UNITS.playlistInsert);
     // YouTube often answers SERVICE_UNAVAILABLE for an insert right after the playlist is created; give it a moment.
     await sleep(1500);
-    const failed = [];
+    const failed = [], addedIds = [];
     let added = 0;
     for (let i = 0; i < direct.length; i++) {
       const t = direct[i];
       renderYtExport('Adding ' + (i + 1) + ' of ' + direct.length + ': ' + escapeHtml(t.song) + '…');
       const r = await ytInsertItem(pl.id, t, added);
       units += r.units;
-      if (r.ok) added++; else failed.push({ t, reason: r.reason, index: i });
+      if (r.ok) { added++; addedIds.push(t.id); } else failed.push({ t, reason: r.reason, index: i });
       await sleep(250);
     }
     let privacy = null, itemCount = null;
@@ -3140,9 +3164,10 @@ async function ytExport() {
       itemCount = p && p.contentDetails ? p.contentDetails.itemCount : null;
     } catch (e) { /* the check is informational */ }
     ytLastExport = { id: pl.id, name, url: 'https://music.youtube.com/playlist?list=' + pl.id, added, itemCount, privacy, failed, skipped, units, deleted: false };
-    db.youtubeExports = (db.youtubeExports || []).concat({ id: pl.id, name, url: ytLastExport.url, added, at: new Date().toISOString() });
+    db.youtubeExports = (db.youtubeExports || []).concat({ id: pl.id, name, url: ytLastExport.url, added, at: new Date().toISOString(),
+      trackIds: addedIds, fromPlaylistId: savedPlaylistMatching(sel.map((t) => t.id)) });
     saveDb();
-    renderYtExport();
+    renderYtExport(); renderTable(); renderLive();
     toast('Created "' + name + '" with ' + added + ' videos', 'ok');
   } catch (e) {
     saveDb();
@@ -3178,7 +3203,11 @@ async function ytRetryFailed() {
   for (const f of x.failed.slice().sort((a, b) => a.index - b.index)) {
     const r = await ytInsertItem(x.id, f.t, Math.min(f.index, x.added));
     x.units += r.units;
-    if (r.ok) x.added++; else still.push(Object.assign({}, f, { reason: r.reason }));
+    if (r.ok) {
+      x.added++;
+      const rec = (db.youtubeExports || []).find((e) => e.id === x.id);
+      if (rec && rec.trackIds && !rec.trackIds.includes(f.t.id)) rec.trackIds.push(f.t.id);
+    } else still.push(Object.assign({}, f, { reason: r.reason }));
     await sleep(250);
   }
   x.failed = still;
@@ -3203,7 +3232,7 @@ async function ytDeleteExport() {
     x.deleted = true;
     db.youtubeExports = (db.youtubeExports || []).filter((p) => p.id !== x.id);
     saveDb();
-    renderYtExport();
+    renderYtExport(); renderTable(); renderLive();
     toast('Deleted "' + x.name + '" from YouTube', 'ok');
   } catch (e) { toast('Could not delete it: ' + e.message, 'error'); }
 }
@@ -3998,6 +4027,71 @@ $('#jump-bottom').addEventListener('click', () => {
   window.scrollTo({ top: Math.max(0, bottom - window.innerHeight + room), behavior: 'smooth' });
 });
 try { if (localStorage.getItem(LIST_OPEN_KEY) === '0') setListOpen(false, false); } catch (e) { /* storage unavailable */ }
+
+/* =========================================================
+   "In playlists": shows which saved playlists (and Spotify / YouTube exports) each
+   track is in. Built on the fly from the library; nothing extra is stored for it.
+   Export records carry trackIds (recorded at export time) and, when the export was
+   exactly a saved playlist, fromPlaylistId.
+   ========================================================= */
+function savedPlaylistMatching(ids) {
+  const want = [...new Set(ids)].sort().join(',');
+  if (!want) return null;
+  const p = db.playlists.find((pl) => [...new Set(pl.items.map((i) => i.trackId).filter(Boolean))].sort().join(',') === want);
+  return p ? p.id : null;
+}
+function playlistMembership() {
+  const map = new Map();
+  const add = (id, entry) => { if (!map.has(id)) map.set(id, []); const list = map.get(id); if (!list.some((e) => e.key === entry.key)) list.push(entry); };
+  const exportsFor = {};
+  [['sp', db.spotifyExports], ['yt', db.youtubeExports]].forEach(([kind, recs]) => (recs || []).forEach((x) => {
+    if (!Array.isArray(x.trackIds) || !x.trackIds.length) return;
+    const fromSaved = x.fromPlaylistId && db.playlists.some((p) => p.id === x.fromPlaylistId);
+    if (fromSaved) (exportsFor[x.fromPlaylistId] = exportsFor[x.fromPlaylistId] || []).push({ kind, url: x.url, name: x.name });
+    else x.trackIds.forEach((id) => add(id, { key: kind + ':' + x.id, kind, name: x.name, url: x.url }));
+  }));
+  db.playlists.forEach((p) => p.items.forEach((i) => {
+    if (i.trackId) add(i.trackId, { key: 'pl:' + p.id, playlistId: p.id, name: p.name, exports: exportsFor[p.id] || [] });
+  }));
+  return map;
+}
+let membershipCache = null, membershipStamp = '';
+function membershipFor(id) {
+  // Rebuilt whenever playlists or exports change (cheap fingerprint of their sizes and names).
+  const stamp = db.playlists.map((p) => p.id + ':' + p.items.length + ':' + p.name).join('|') + '#' +
+    (db.spotifyExports || []).map((x) => x.id + ':' + (x.trackIds || []).length).join('|') + '#' + (db.youtubeExports || []).map((x) => x.id + ':' + (x.trackIds || []).length).join('|');
+  if (!membershipCache || stamp !== membershipStamp) { membershipCache = playlistMembership(); membershipStamp = stamp; }
+  return membershipCache.get(id) || [];
+}
+function playlistTrackIds() { membershipFor(''); return new Set(membershipCache.keys()); }
+function membershipHtml(id) {
+  const list = membershipFor(id);
+  if (!list.length) return '';
+  const expIcon = (e) => '<a class="pl-exp ' + e.kind + '" href="' + escapeHtml(safeUrl(e.url) || '#') + '" target="_blank" rel="noopener noreferrer" title="Open the ' + (e.kind === 'sp' ? 'Spotify' : 'YouTube Music') + ' export: ' + escapeHtml(e.name) + '" aria-label="Open the ' + (e.kind === 'sp' ? 'Spotify' : 'YouTube Music') + ' export of this playlist">' + icon(e.kind === 'sp' ? 'spotify' : 'ytmusic') + '</a>';
+  return '<div class="in-pl"><span class="lbl">In playlists:</span>' + list.map((e) => e.playlistId
+    ? '<button type="button" class="pl-chip" data-open-pl="' + escapeHtml(e.playlistId) + '" title="Open “' + escapeHtml(e.name) + '” in Playlist Creator">' + escapeHtml(e.name) + '</button>' + e.exports.map(expIcon).join('')
+    : '<a class="pl-chip" href="' + escapeHtml(safeUrl(e.url) || '#') + '" target="_blank" rel="noopener noreferrer" title="Open the ' + (e.kind === 'sp' ? 'Spotify' : 'YouTube Music') + ' playlist">' + icon(e.kind === 'sp' ? 'spotify' : 'ytmusic') + escapeHtml(e.name) + '</a>').join('') + '</div>';
+}
+// Opens a saved playlist's card in Playlist Creator. The current selection is not touched.
+function openSavedPlaylist(id) {
+  switchView('creator');
+  renderCreator();
+  const card = document.querySelector('.playlist-card[data-id="' + CSS.escape(id) + '"]');
+  if (!card) return;
+  document.querySelectorAll('.playlist-card').forEach((c) => { if (c !== card) c.open = false; });
+  card.open = true;
+  card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  card.classList.add('flash');
+  setTimeout(() => card.classList.remove('flash'), 1600);
+}
+function onPlaylistChip(e) {
+  const chip = e.target.closest('[data-open-pl]');
+  if (!chip) return false;
+  e.preventDefault(); e.stopPropagation();
+  openSavedPlaylist(chip.dataset.openPl);
+  return true;
+}
+['#track-body', '#live-cards', '#builder-list'].forEach((sel) => $(sel).addEventListener('click', onPlaylistChip, true));
 
 // Resource-row logos reuse the header's embedded images.
 document.querySelectorAll('img[data-logo-from]').forEach((img) => { const src = document.querySelector(img.dataset.logoFrom); if (src) img.src = src.src; });
