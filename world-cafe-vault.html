@@ -184,6 +184,45 @@
   .field { position: relative; }
   .field .ico { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--faint); font-size: 1rem; pointer-events: none; }
   .field input { padding-left: 40px; }
+  /* Date picker field (the hidden #f-date select stays the single source of truth) */
+  .date-btn {
+    width: 100%; text-align: left; background: var(--card); border: 1px solid var(--border-strong); color: var(--text); border-radius: 9px;
+    padding: 11px 34px 11px 40px; font-size: 0.95rem; font-family: inherit; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .date-btn:focus-visible, .date-btn[aria-expanded="true"] { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12); outline: none; }
+  .date-clear { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 28px; height: 28px; border: none; border-radius: 7px; background: transparent; color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .date-clear:hover { background: var(--pill); color: var(--text); }
+  .date-clear .ico { position: static; transform: none; color: inherit; font-size: 0.95rem; }
+  .cal-pop { position: absolute; top: calc(100% + 6px); left: 0; z-index: 60; width: 308px; max-width: calc(100vw - 32px); background: var(--card); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 18px 44px rgba(15, 23, 42, 0.18); padding: 12px; }
+  .cal-head { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+  .cal-head select { width: auto; flex: 1; padding: 7px 26px 7px 10px; font-size: 0.88rem; }
+  .cal-nav { width: 34px; height: 34px; flex: none; border: 1px solid var(--border); border-radius: 9px; background: var(--card); cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text); }
+  .cal-nav:disabled { opacity: 0.35; cursor: not-allowed; }
+  .cal-nav .ico { position: static; transform: none; color: inherit; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+  .cal-dow { text-align: center; font-size: 0.7rem; font-weight: 700; color: var(--muted); padding: 4px 0; }
+  .cal-day { height: 36px; border-radius: 9px; border: 1px solid transparent; background: transparent; font-size: 0.88rem; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: inherit; }
+  .cal-day.off { color: #c3c9d4; cursor: not-allowed; }
+  .cal-day.on { color: var(--text); font-weight: 800; cursor: pointer; background: var(--blue-soft); }
+  .cal-day.on::after { content: ''; width: 4px; height: 4px; border-radius: 50%; background: var(--indigo); margin-top: 1px; }
+  .cal-day.on:hover, .cal-day.on:focus-visible { border-color: var(--indigo); outline: none; }
+  .cal-day.today { border-color: var(--border-strong); }
+  .cal-day.picked { background: var(--indigo); color: #fff; }
+  .cal-day.picked::after { background: #fff; }
+  .cal-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; font-size: 0.78rem; color: var(--muted); gap: 8px; }
+  .cal-foot button { border: none; background: none; color: var(--blue); font-weight: 700; cursor: pointer; font-size: 0.8rem; padding: 4px; }
+  /* Artist / song suggestion lists */
+  .suggest { position: absolute; top: calc(100% + 6px); left: 0; z-index: 60; min-width: 100%; width: max-content; max-width: min(440px, calc(100vw - 32px)); max-height: 296px; overflow-y: auto; background: var(--card); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 18px 44px rgba(15, 23, 42, 0.18); padding: 4px; list-style: none; margin: 0; }
+  .suggest li { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; cursor: pointer; font-size: 0.9rem; min-height: 36px; }
+  .suggest li .nm { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .suggest li .by { flex: 0 1 auto; min-width: 0; color: var(--muted); font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .suggest li .ct { flex: none; font-size: 0.75rem; font-weight: 700; color: var(--blue); background: var(--blue-soft); border-radius: 999px; padding: 1px 8px; }
+  .suggest li.active, .suggest li:hover { background: var(--blue-soft); }
+  .suggest .none { color: var(--muted); cursor: default; }
+  .suggest .none:hover { background: none; }
+  .suggest .note { font-size: 0.78rem; border-top: 1px solid var(--border); border-radius: 0; margin-top: 4px; white-space: normal; }
+  /* First visible row of each import (broadcast) */
+  table.tracks tbody tr.import-start td { border-top: 3px solid var(--indigo); }
   input, select, textarea {
     width: 100%; background: var(--card); border: 1px solid var(--border-strong); color: var(--text); border-radius: 9px;
     padding: 11px 14px; font-size: 0.95rem; outline: none;
@@ -431,6 +470,9 @@
     .mobile-only { display: block; }
     input, select, textarea { font-size: 16px; padding: 10px 12px; } /* 16px avoids iOS zoom on focus */
     .field input { padding-left: 38px; }
+    .date-btn { font-size: 16px; padding: 10px 34px 10px 38px; }
+    .suggest { width: 100%; max-width: 100%; }
+    .suggest li { min-height: 44px; font-size: 0.95rem; }
     .grid-cards { grid-template-columns: 1fr; gap: 14px; }
     .form-grid { grid-template-columns: 1fr; }
     .modal { padding: 18px; }
@@ -444,6 +486,8 @@
     table.tracks tr { background: var(--card); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); margin-bottom: 12px; padding: 14px 14px 10px; position: relative; }
     table.tracks tr.selected { border-color: var(--indigo); box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.15); }
     table.tracks td, table.tracks tbody tr:hover td, table.tracks tbody tr.selected td { border: none; padding: 3px 0; background: transparent; }
+    table.tracks tbody tr.import-start td { border-top: none; }
+    table.tracks tbody tr.import-start { border-top: 3px solid var(--indigo); }
     .c-check { position: absolute; top: 14px; right: 14px; width: auto; padding: 0 !important; }
     .c-num { display: none !important; }
     .c-title { padding-right: 34px !important; font-size: 1rem; }
@@ -593,9 +637,15 @@
         </div>
       </div>
       <div class="filters">
-        <div class="field"><span class="ico" data-icon="search"></span><input type="search" id="f-artist" placeholder="Filter by artist..." aria-label="Filter by artist"></div>
-        <div class="field"><span class="ico" data-icon="music"></span><input type="search" id="f-song" placeholder="Filter by song title..." aria-label="Filter by song title"></div>
-        <select id="f-date" aria-label="Show date"><option value="">All Dates</option></select>
+        <div class="field"><span class="ico" data-icon="search"></span><input type="search" id="f-artist" placeholder="Filter by artist..." aria-label="Filter by artist" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="f-artist-list" autocomplete="off"><ul class="suggest" id="f-artist-list" role="listbox" aria-label="Matching artists" hidden></ul></div>
+        <div class="field"><span class="ico" data-icon="music"></span><input type="search" id="f-song" placeholder="Filter by song title..." aria-label="Filter by song title" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="f-song-list" autocomplete="off"><ul class="suggest" id="f-song-list" role="listbox" aria-label="Matching song titles" hidden></ul></div>
+        <div class="field date-field">
+          <span class="ico" data-icon="calendar"></span>
+          <button type="button" class="date-btn" id="f-date-btn" aria-haspopup="dialog" aria-expanded="false" aria-label="Show date: All Dates">All Dates</button>
+          <button type="button" class="date-clear" id="f-date-clear" aria-label="Clear the date filter" hidden><span class="ico" data-icon="x"></span></button>
+          <select id="f-date" aria-label="Show date" hidden tabindex="-1"><option value="">All Dates</option></select>
+          <div class="cal-pop" id="cal-pop" role="dialog" aria-label="Choose a show date" hidden></div>
+        </div>
         <select id="f-status" aria-label="Link status">
           <option value="">All Link Statuses</option>
           <option value="Verified Direct">Verified Direct</option>
@@ -1443,17 +1493,29 @@ function sourceTag(source) {
 /* =========================================================
    Song Explorer
    ========================================================= */
+// The current Song Explorer filters. `skip` leaves one out (used by the date calendar and
+// the suggestion lists, which show what is available given all the OTHER filters).
+function currentFilters(skip) {
+  return {
+    fa: skip === 'artist' ? '' : norm($('#f-artist').value),
+    fs: skip === 'song' ? '' : norm($('#f-song').value),
+    date: skip === 'date' ? '' : $('#f-date').value,
+    type: $('#f-type').value, status: $('#f-status').value
+  };
+}
+function passesFilters(t, f) {
+  if (f.date && t.showDate !== f.date) return false;
+  if (f.type && t.type !== f.type) return false;
+  if (f.status && t.linkStatus !== f.status) return false;
+  if (f.fa && !norm(t.artist + ' ' + (t.featuredGuest || '')).includes(f.fa)) return false;
+  if (f.fs && !norm(t.song + ' ' + (t.album || '')).includes(f.fs)) return false;
+  return true;
+}
+function tracksExcept(skip) { const f = currentFilters(skip); return scopedTracks().filter((t) => passesFilters(t, f)); }
+
 function filteredTracks() {
-  const fa = norm($('#f-artist').value), fs = norm($('#f-song').value);
-  const date = $('#f-date').value, type = $('#f-type').value, status = $('#f-status').value;
-  const list = scopedTracks().filter((t) => {
-    if (date && t.showDate !== date) return false;
-    if (type && t.type !== type) return false;
-    if (status && t.linkStatus !== status) return false;
-    if (fa && !norm(t.artist + ' ' + (t.featuredGuest || '')).includes(fa)) return false;
-    if (fs && !norm(t.song + ' ' + (t.album || '')).includes(fs)) return false;
-    return true;
-  });
+  const f = currentFilters();
+  const list = scopedTracks().filter((t) => passesFilters(t, f));
   const { key, dir } = sortState;
   const mul = dir === 'asc' ? 1 : -1;
   const val = (t) => {
@@ -1506,9 +1568,10 @@ function renderMetricsAndCounts() {
   $('#tc-creator').textContent = db.selection.length;
 }
 
-function trackRowHtml(t, selected) {
+function trackRowHtml(t, selected, startsImport) {
   const typePill = t.type === LIVE ? '<span class="pill pill-live">★ Live Session</span>' : '<span class="pill pill-type">Studio Track</span>';
-  return '<tr data-id="' + t.id + '"' + (selected ? ' class="selected"' : '') + '>' +
+  const cls = [selected ? 'selected' : '', startsImport ? 'import-start' : ''].filter(Boolean).join(' ');
+  return '<tr data-id="' + t.id + '"' + (cls ? ' class="' + cls + '"' : '') + '>' +
     '<td class="c-check"><input type="checkbox" class="row-check" ' + (selected ? 'checked' : '') + ' aria-label="Select ' + escapeHtml(t.song + ' by ' + t.artist) + '"></td>' +
     '<td class="c-num">' + (t.position || '—') + '</td>' +
     '<td class="c-title"><div class="song">' + escapeHtml(t.song) + '</div><div class="artist">' + escapeHtml(t.artist) + '</div>' +
@@ -1526,6 +1589,20 @@ function trackRowHtml(t, selected) {
 
 let lastRendered = [];
 
+// Marks the first visible row of each import (one broadcast: source + show date + air time).
+// Borders are drawn only when every import's visible rows sit together; a sort that
+// scatters them (A-Z, link status, # across shows) gets no borders.
+function importStarts(list) {
+  const keys = list.map(broadcastKey);
+  const seen = new Set();
+  for (let i = 0; i < keys.length; i++) {
+    if (i > 0 && keys[i] === keys[i - 1]) continue;
+    if (seen.has(keys[i])) return keys.map(() => false);
+    seen.add(keys[i]);
+  }
+  return keys.map((k, i) => i === 0 || k !== keys[i - 1]);
+}
+
 function renderTable() {
   const list = filteredTracks();
   lastRendered = list;
@@ -1536,8 +1613,10 @@ function renderTable() {
   } else if (!list.length) {
     body.innerHTML = '<tr class="empty-row"><td colspan="9">No broadcast tracks match your filters.</td></tr>';
   } else {
-    body.innerHTML = list.map((t) => trackRowHtml(t, sel.has(t.id))).join('');
+    const starts = importStarts(list);
+    body.innerHTML = list.map((t, i) => trackRowHtml(t, sel.has(t.id), starts[i])).join('');
   }
+  renderDateField();
   $('#result-count').textContent = 'Showing ' + list.length + ' of ' + scopedTracks().length + ' broadcast tracks';
   $('#chk-all').checked = list.length > 0 && list.every((t) => sel.has(t.id));
   document.querySelectorAll('#track-table th.sortable').forEach((th) => {
@@ -3622,6 +3701,227 @@ $('#btn-import').addEventListener('click', () => renderSyncSettings());
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') syncNow(); });
 window.addEventListener('online', () => syncNow());
 setInterval(() => { if (document.visibilityState === 'visible') syncNow(); }, 60000);
+
+/* =========================================================
+   Search & Filter helpers: date calendar and artist / song suggestion lists.
+   The original inputs and the hidden #f-date select still hold the filter values,
+   so everything that reads or sets them keeps working unchanged.
+   ========================================================= */
+const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+let calMonth = '';   // 'YYYY-MM' shown in the calendar
+let calFocus = '';   // ISO date that has keyboard focus
+
+function renderDateField() {
+  const v = $('#f-date').value;
+  const label = v ? labelFromIso(v) : 'All Dates';
+  $('#f-date-btn').textContent = label;
+  $('#f-date-btn').setAttribute('aria-label', 'Show date: ' + label);
+  $('#f-date-clear').hidden = !v;
+}
+
+function calRange() {
+  const all = db.tracks.map((t) => t.showDate).filter(Boolean).sort();
+  if (!all.length) { const t = todayIso().slice(0, 7); return { min: t, max: t }; }
+  return { min: all[0].slice(0, 7), max: all[all.length - 1].slice(0, 7) };
+}
+function calEnabled() { return new Set(tracksExcept('date').map((t) => t.showDate)); }
+function monthAdd(ym, n) { let [y, m] = ym.split('-').map(Number); m += n; while (m < 1) { m += 12; y--; } while (m > 12) { m -= 12; y++; } return y + '-' + pad2(m); }
+
+function renderCalendar() {
+  const pop = $('#cal-pop');
+  const { min, max } = calRange();
+  if (calMonth < min) calMonth = min;
+  if (calMonth > max) calMonth = max;
+  const enabled = calEnabled();
+  const picked = $('#f-date').value, today = todayIso();
+  const [y, m] = calMonth.split('-').map(Number);
+  const years = []; for (let yy = Number(min.slice(0, 4)); yy <= Number(max.slice(0, 4)); yy++) years.push(yy);
+  const first = new Date(Date.UTC(y, m - 1, 1)).getUTCDay();
+  const days = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  let cells = DAYS.map((d) => '<div class="cal-dow" aria-hidden="true">' + d.slice(0, 2) + '</div>').join('');
+  for (let i = 0; i < first; i++) cells += '<div></div>';
+  let shown = 0;
+  for (let d = 1; d <= days; d++) {
+    const iso = isoFromYMD(y, m, d);
+    const on = enabled.has(iso);
+    if (on) shown++;
+    const cls = 'cal-day ' + (on ? 'on' : 'off') + (iso === picked ? ' picked' : '') + (iso === today ? ' today' : '');
+    cells += on
+      ? '<button type="button" class="' + cls + '" data-day="' + iso + '" tabindex="' + (iso === calFocus ? '0' : '-1') + '" aria-label="' + escapeHtml(labelFromIso(iso)) + (iso === picked ? ' (selected)' : '') + '">' + d + '</button>'
+      : '<span class="' + cls + '" aria-disabled="true" aria-label="' + escapeHtml(labelFromIso(iso)) + ', no shows">' + d + '</span>';
+  }
+  pop.innerHTML =
+    '<div class="cal-head">' +
+      '<button type="button" class="cal-nav" data-nav="-1" aria-label="Previous month"' + (calMonth <= min ? ' disabled' : '') + '><span class="ico">' + ICON.up.replace('m18 15-6-6-6 6', 'm15 18-6-6 6-6') + '</span></button>' +
+      '<select id="cal-month" aria-label="Month">' + MONTH_NAMES.map((n, i) => '<option value="' + (i + 1) + '"' + (i + 1 === m ? ' selected' : '') + '>' + n + '</option>').join('') + '</select>' +
+      '<select id="cal-year" aria-label="Year">' + years.map((yy) => '<option' + (yy === y ? ' selected' : '') + '>' + yy + '</option>').join('') + '</select>' +
+      '<button type="button" class="cal-nav" data-nav="1" aria-label="Next month"' + (calMonth >= max ? ' disabled' : '') + '><span class="ico">' + ICON.up.replace('m18 15-6-6-6 6', 'm9 18 6-6-6-6') + '</span></button>' +
+    '</div>' +
+    '<div class="cal-grid">' + cells + '</div>' +
+    '<div class="cal-foot"><span>' + (shown ? shown + ' day' + (shown === 1 ? '' : 's') + ' with shows' : 'No shows this month') + '</span>' +
+      '<button type="button" data-latest="1">Latest show</button></div>';
+}
+
+function calOpen() {
+  const enabled = [...calEnabled()].sort();
+  const picked = $('#f-date').value;
+  const target = picked || enabled[enabled.length - 1] || calRange().max + '-01';
+  calMonth = target.slice(0, 7);
+  calFocus = picked || enabled.filter((d) => d.startsWith(calMonth)).pop() || '';
+  renderCalendar();
+  $('#cal-pop').hidden = false;
+  $('#f-date-btn').setAttribute('aria-expanded', 'true');
+  const f = $('#cal-pop .cal-day[tabindex="0"]') || $('#cal-pop .cal-day.on') || $('#cal-month');
+  if (f) f.focus();
+}
+function calClose(refocus) {
+  if ($('#cal-pop').hidden) return;
+  $('#cal-pop').hidden = true;
+  $('#f-date-btn').setAttribute('aria-expanded', 'false');
+  if (refocus) $('#f-date-btn').focus();
+}
+function setDateFilter(iso) {
+  $('#f-date').value = iso;
+  $('#f-date').dispatchEvent(new Event('change'));
+  renderDateField();
+}
+function calMove(from, step) {
+  const enabled = calEnabled();
+  const [y, m, d] = from.split('-').map(Number);
+  const base = new Date(Date.UTC(y, m - 1, d));
+  for (let i = 1; i <= 400; i++) {
+    const dt = new Date(base.getTime() + step * i * 86400000);
+    const iso = isoFromYMD(dt.getUTCFullYear(), dt.getUTCMonth() + 1, dt.getUTCDate());
+    if (enabled.has(iso)) return iso;
+  }
+  return from;
+}
+
+$('#f-date-btn').addEventListener('click', () => { if ($('#cal-pop').hidden) calOpen(); else calClose(true); });
+$('#f-date-clear').addEventListener('click', () => { calClose(); setDateFilter(''); $('#f-date-btn').focus(); });
+$('#cal-pop').addEventListener('click', (e) => {
+  const day = e.target.closest('[data-day]');
+  if (day) { setDateFilter(day.dataset.day); calClose(true); return; }
+  const nav = e.target.closest('[data-nav]');
+  if (nav && !nav.disabled) { calMonth = monthAdd(calMonth, Number(nav.dataset.nav)); calFocus = ''; renderCalendar(); const b = $('#cal-pop [data-nav="' + nav.dataset.nav + '"]'); if (b && !b.disabled) b.focus(); return; }
+  if (e.target.closest('[data-latest]')) { const en = [...calEnabled()].sort(); if (en.length) { calMonth = en[en.length - 1].slice(0, 7); calFocus = en[en.length - 1]; renderCalendar(); const f = $('#cal-pop .cal-day[tabindex="0"]'); if (f) f.focus(); } }
+});
+$('#cal-pop').addEventListener('change', (e) => {
+  if (e.target.id === 'cal-month' || e.target.id === 'cal-year') {
+    calMonth = $('#cal-year').value + '-' + pad2(Number($('#cal-month').value));
+    calFocus = '';
+    const keep = e.target.id;
+    renderCalendar();
+    $('#' + keep).focus();
+  }
+});
+$('#cal-pop').addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') { e.preventDefault(); calClose(true); return; }
+  const day = e.target.closest('[data-day]');
+  if (!day) return;
+  const step = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 }[e.key];
+  if (!step) return;
+  e.preventDefault();
+  const next = Math.abs(step) === 7 ? calMove7(day.dataset.day, step) : calMove(day.dataset.day, step);
+  calFocus = next; calMonth = next.slice(0, 7);
+  renderCalendar();
+  const f = $('#cal-pop [data-day="' + next + '"]'); if (f) f.focus();
+});
+// Up/down: jump a week, then to the nearest show date in that direction.
+function calMove7(from, step) {
+  const enabled = calEnabled();
+  const [y, m, d] = from.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d) + step * 86400000);
+  const iso = isoFromYMD(dt.getUTCFullYear(), dt.getUTCMonth() + 1, dt.getUTCDate());
+  return enabled.has(iso) ? iso : calMove(iso, step > 0 ? 1 : -1) === iso ? from : calMove(iso, step > 0 ? 1 : -1);
+}
+document.addEventListener('click', (e) => { if (!$('#cal-pop').hidden && !e.target.closest('.date-field')) calClose(false); });
+
+/* ---------- Suggestion lists ---------- */
+function suggestItems(kind) {
+  const input = kind === 'artist' ? $('#f-artist') : $('#f-song');
+  const q = norm(input.value);
+  if (!q) return [];
+  const pool = tracksExcept(kind);
+  const groups = new Map();
+  pool.forEach((t) => {
+    const name = kind === 'artist' ? t.artist : t.song;
+    if (!name || !norm(name).includes(q)) return;
+    const key = kind === 'artist' ? norm(name) : norm(name) + '|' + norm(t.artist);
+    if (!groups.has(key)) groups.set(key, { name, by: kind === 'song' ? t.artist : '', titleKey: norm(name), count: 0 });
+    groups.get(key).count++;
+  });
+  let items = [...groups.values()];
+  if (kind === 'song') {
+    const perTitle = new Map();
+    items.forEach((it) => perTitle.set(it.titleKey, (perTitle.get(it.titleKey) || 0) + 1));
+    items.forEach((it) => { if (perTitle.get(it.titleKey) < 2) it.by = ''; });
+  }
+  const starts = (it) => (norm(it.name).startsWith(q) ? 0 : 1);
+  items.sort((a, b) => starts(a) - starts(b) || a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }) || a.by.localeCompare(b.by));
+  items = items.slice(0, 200);
+  // The filter itself also matches a show's featured guest (artist box) or the album (song box),
+  // as it always has; say so, so the counts are not misleading.
+  if (kind === 'artist') {
+    const shows = new Set(pool.filter((t) => t.featuredGuest && norm(t.featuredGuest).includes(q)).map(broadcastKey));
+    if (shows.size) items.note = 'Also matches the featured guest of ' + shows.size + ' show' + (shows.size === 1 ? '' : 's') + ', so every track from that show is listed too.';
+  } else {
+    const extra = pool.filter((t) => !norm(t.song).includes(q) && norm(t.song + ' ' + (t.album || '')).includes(q)).length;
+    if (extra) items.note = 'Also matches the album of ' + extra + ' more track' + (extra === 1 ? '' : 's') + '.';
+  }
+  return items;
+}
+
+function setupSuggest(kind) {
+  const input = kind === 'artist' ? $('#f-artist') : $('#f-song');
+  const list = $('#f-' + kind + '-list');
+  let items = [], active = -1;
+  const close = () => { list.hidden = true; input.setAttribute('aria-expanded', 'false'); input.removeAttribute('aria-activedescendant'); active = -1; };
+  const paint = () => {
+    list.querySelectorAll('li[role="option"]').forEach((li, i) => { li.classList.toggle('active', i === active); li.setAttribute('aria-selected', i === active ? 'true' : 'false'); });
+    if (active >= 0) {
+      const li = list.querySelector('#' + kind + '-opt-' + active);
+      input.setAttribute('aria-activedescendant', li.id);
+      li.scrollIntoView({ block: 'nearest' });
+    } else input.removeAttribute('aria-activedescendant');
+  };
+  const open = () => {
+    items = suggestItems(kind);
+    active = -1;
+    if (!norm(input.value)) { close(); return; }
+    list.innerHTML = items.length
+      ? items.map((it, i) => '<li role="option" id="' + kind + '-opt-' + i + '" data-i="' + i + '" aria-selected="false"><span class="nm">' + escapeHtml(it.name) + '</span>' +
+          (it.by ? '<span class="by">' + escapeHtml(it.by) + '</span>' : '') + '<span class="ct" aria-label="' + it.count + ' tracks">' + it.count + '</span></li>').join('')
+      : '<li class="none">No matching ' + (kind === 'artist' ? 'artists' : 'titles') + ' with the current filters</li>';
+    if (items.note) list.insertAdjacentHTML('beforeend', '<li class="none note">' + escapeHtml(items.note) + '</li>');
+    list.scrollTop = 0;
+    list.hidden = false;
+    input.setAttribute('aria-expanded', 'true');
+  };
+  const choose = (i) => {
+    const it = items[i];
+    if (!it) return;
+    input.value = it.name;
+    input.dispatchEvent(new Event('input'));   // applies the filter exactly as typing would
+    close();
+  };
+  input.addEventListener('input', () => { if (document.activeElement === input) open(); });
+  input.addEventListener('focus', () => { if (norm(input.value)) open(); });
+  input.addEventListener('blur', () => setTimeout(close, 150));
+  input.addEventListener('keydown', (e) => {
+    if (list.hidden) { if (e.key === 'ArrowDown' && norm(input.value)) { open(); e.preventDefault(); } return; }
+    if (e.key === 'ArrowDown') { e.preventDefault(); if (items.length) { active = Math.min(items.length - 1, active + 1); paint(); } }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); if (items.length) { active = Math.max(0, active - 1); paint(); } }
+    else if (e.key === 'Enter') { if (active >= 0) { e.preventDefault(); choose(active); } else close(); }
+    else if (e.key === 'Escape') { e.preventDefault(); close(); }   // closes the list without clearing the text
+  });
+  // pointerdown keeps focus in the box so a tap on a phone is not lost to blur
+  list.addEventListener('pointerdown', (e) => e.preventDefault());
+  list.addEventListener('mousedown', (e) => e.preventDefault());
+  list.addEventListener('click', (e) => { const li = e.target.closest('li[data-i]'); if (li) choose(Number(li.dataset.i)); });
+}
+setupSuggest('artist');
+setupSuggest('song');
 
 // Resource-row logos reuse the header's embedded images.
 document.querySelectorAll('img[data-logo-from]').forEach((img) => { const src = document.querySelector(img.dataset.logoFrom); if (src) img.src = src.src; });
