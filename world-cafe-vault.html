@@ -285,6 +285,11 @@
   .src-tag { font-size: 0.72rem; font-weight: 700; color: #475569; background: var(--pill); border-radius: 6px; padding: 1px 7px; white-space: nowrap; }
   .src-tag.wc { color: var(--wc-red); background: var(--wc-red-soft); }
   .src-tag.ootb { color: #d9541e; background: #fdf0ea; }
+  .src-tag.xpn2 { color: #0f766e; background: #e6f4f2; }
+  .ootb-bar.hr-bar span { background: #0f766e; }
+  #hourly-import select { width: auto; min-width: 7.6em; padding: 6px 28px 6px 8px; }
+  .hr-table td:first-child .small { white-space: nowrap; }
+  .show-card .hours { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 2px; }
   /* Out of the Box import */
   .ootb-modes { display: grid; gap: 8px; margin: 6px 0 10px; }
   .ootb-modes label { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 0.9rem; }
@@ -973,9 +978,25 @@
       <div id="ootb-preview"></div>
     </div>
 
+    <div class="section" id="hourly-import">
+      <h3 style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">Hourly playlists <span class="src-tag xpn2">XPN2</span></h3>
+      <p>Adds XPN2 playlists one hour at a time from XPN's public playlist page (US Eastern times, back to 2019). Hours already in your library are skipped, the hour still airing is left out, and nothing already in your library is changed. You see a preview before anything is saved.</p>
+      <div class="ootb-modes" role="radiogroup" aria-label="Which hours">
+        <label><input type="radio" name="hr-mode" value="latest" checked> Latest <input type="number" id="hr-n" value="3" min="1" max="24" inputmode="numeric" aria-label="Number of hours"> complete hours</label>
+        <label><input type="radio" name="hr-mode" value="pick"> <input type="date" id="hr-date" aria-label="Date"> from <select id="hr-start" aria-label="Start hour"></select> for <input type="number" id="hr-count" value="1" min="1" max="24" inputmode="numeric" aria-label="Number of hours to import"> hour(s) <span class="small muted">(up to 24)</span></label>
+      </div>
+      <div class="row">
+        <button class="btn btn-indigo" id="hr-check">Check hours</button>
+        <button class="btn btn-soft" id="hr-cancel" hidden>Cancel</button>
+        <button class="btn btn-soft" id="hr-undo" hidden>Undo last import</button>
+      </div>
+      <div id="hr-progress" hidden><div class="ootb-bar hr-bar"><span id="hr-bar-fill"></span></div><div class="small" id="hr-progress-text" role="status"></div></div>
+      <div id="hr-preview"></div>
+    </div>
+
     <div class="section">
       <h3>Live feeds</h3>
-      <p>World Cafe daily and XPN2 hourly imports arrive in a later phase. Out of the Box can be imported above.</p>
+      <p>XPN2 and Out of the Box can be imported above; World Cafe daily still comes through the Sheet.</p>
     </div>
 
     <div class="section">
@@ -1603,6 +1624,7 @@ function scopedTracks() {
 }
 
 function broadcastKey(t) { return t.source + '|' + t.showDate + '|' + (t.airTime || ''); }
+function archiveKey(t) { return isHourlySource(t.source) ? t.source + '|' + t.showDate + '|*' : broadcastKey(t); }
 
 function streamLinks(t) {
   const sp = safeUrl(t.spotifyUrl), yt = safeUrl(t.youtubeUrl);
@@ -1620,7 +1642,7 @@ function statusHtml(t) {
 }
 
 function sourceTag(source) {
-  return '<span class="src-tag' + (source === 'World Cafe' ? ' wc' : source === 'Out of the Box' ? ' ootb' : '') + '">' + escapeHtml(source) + '</span>';
+  return '<span class="src-tag' + (source === 'World Cafe' ? ' wc' : source === 'Out of the Box' ? ' ootb' : source === 'XPN2' ? ' xpn2' : '') + '">' + escapeHtml(source) + '</span>';
 }
 
 /* =========================================================
@@ -1685,7 +1707,7 @@ function renderFilterOptions() {
 function renderMetricsAndCounts() {
   const list = scopedTracks();
   const total = list.length;
-  const shows = new Set(list.map(broadcastKey)).size;
+  const shows = new Set(list.map(archiveKey)).size;   // one per Show Archives card (an hourly source counts once per day)
   const live = list.filter((t) => t.type === LIVE).length;
   const verified = list.filter((t) => t.linkStatus === VERIFIED).length;
   $('#m-tracks').textContent = total;
@@ -1781,16 +1803,18 @@ function showMeta(source, showDate, airTime) {
 function renderShows() {
   const groups = new Map();
   scopedTracks().forEach((t) => {
-    const k = broadcastKey(t);
-    if (!groups.has(k)) groups.set(k, { source: t.source, showDate: t.showDate, airTime: t.airTime || '', tracks: [] });
+    const hourly = isHourlySource(t.source);
+    const k = archiveKey(t);
+    if (!groups.has(k)) groups.set(k, { source: t.source, showDate: t.showDate, airTime: hourly ? '' : (t.airTime || ''), hourly, tracks: [] });
     groups.get(k).tracks.push(t);
   });
-  const list = [...groups.values()].sort((a, b) => (b.showDate + b.airTime).localeCompare(a.showDate + a.airTime));
+  const list = [...groups.values()].sort((a, b) => b.showDate.localeCompare(a.showDate) || hourStartFromLabel(b.airTime) - hourStartFromLabel(a.airTime) || b.airTime.localeCompare(a.airTime));
   if (!list.length) {
     $('#show-cards').innerHTML = '<div class="card panel muted">No broadcasts yet. Import your Sheet CSVs to fill the archive.</div>';
     return;
   }
   $('#show-cards').innerHTML = list.map((g) => {
+    if (g.hourly) return hourlyDayCard(g);
     const meta = showMeta(g.source, g.showDate, g.airTime);
     const n = g.tracks.length;
     const live = g.tracks.filter((t) => t.type === LIVE).length;
@@ -1805,10 +1829,34 @@ function renderShows() {
       '<div class="stats"><span class="stat">' + n + ' tracks</span>' +
         (live ? '<span class="stat blue">★ ' + live + ' live</span>' : '') +
         '<span class="stat green">' + Math.round(100 * direct / n) + '% direct Spotify</span></div>' +
-      (notes ? '<div class="notes">' + escapeHtml(notes).replace(/https:\/\/mediaplayer\.whro\.org\/[^\s<]+/g, (u) => '<a href="' + u + '" target="_blank" rel="noopener noreferrer">Open on WHRO</a>') + '</div>' : '') +
+      (notes ? '<div class="notes">' + archiveLinks(notes) + '</div>' : '') +
       '<div class="foot"><button class="btn btn-outline btn-sm" data-show="' + escapeHtml(g.source + '|' + g.showDate) + '">' + icon('listMusic') + 'View tracks</button></div>' +
       '</article>';
   }).join('');
+}
+
+function archiveLinks(notes) {
+  return escapeHtml(notes)
+    .replace(/https:\/\/mediaplayer\.whro\.org\/[^\s<]+/g, (u) => '<a href="' + u + '" target="_blank" rel="noopener noreferrer">Open on WHRO</a>')
+    .replace(/https:\/\/xpn\.org\/wxpn-playlists\/?/g, (u) => '<a href="' + u + '" target="_blank" rel="noopener noreferrer">Open on XPN</a>');
+}
+// One card per day for hourly sources (XPN2), listing each imported hour.
+function hourlyDayCard(g) {
+  const byHour = new Map();
+  g.tracks.forEach((t) => { const k = t.airTime || ''; if (!byHour.has(k)) byHour.set(k, 0); byHour.set(k, byHour.get(k) + 1); });
+  const hours = [...byHour.entries()].sort((a, b) => hourStartFromLabel(a[0]) - hourStartFromLabel(b[0]));
+  const meta = showMeta(g.source, g.showDate, hours[0][0]);
+  const n = g.tracks.length;
+  const direct = g.tracks.filter((t) => t.linkStatus === VERIFIED).length;
+  return '<article class="card show-card">' +
+    '<div class="top"><span class="date">' + escapeHtml(labelFromIso(g.showDate)) + '</span>' + sourceTag(g.source) + '</div>' +
+    '<h3>' + escapeHtml(g.source) + ' hourly playlists</h3>' +
+    '<div class="session">' + hours.length + ' hour' + (hours.length === 1 ? '' : 's') + ' imported</div>' +
+    '<div class="hours">' + hours.map(([lbl, c]) => '<span class="stat">' + escapeHtml(lbl) + ' · ' + c + '</span>').join('') + '</div>' +
+    '<div class="stats"><span class="stat">' + n + ' tracks</span><span class="stat green">' + Math.round(100 * direct / n) + '% direct Spotify</span></div>' +
+    (meta.archiveNotes ? '<div class="notes">' + archiveLinks(meta.archiveNotes) + '</div>' : '') +
+    '<div class="foot"><button class="btn btn-outline btn-sm" data-show="' + escapeHtml(g.source + '|' + g.showDate) + '">' + icon('listMusic') + 'View tracks</button></div>' +
+    '</article>';
 }
 
 /* =========================================================
@@ -3624,7 +3672,7 @@ const AI_MAX_CANDIDATES = 1500;
 function aiCandidatePool(scope) {
   const all = aiScopeTracks(scope);
   if (all.length <= AI_MAX_CANDIDATES) return all;
-  return all.slice().sort((a, b) => (b.showDate + (b.airTime || '')).localeCompare(a.showDate + (a.airTime || '')) || (a.position || 0) - (b.position || 0)).slice(0, AI_MAX_CANDIDATES);
+  return all.slice().sort((a, b) => String(b.showDate).localeCompare(String(a.showDate)) || hourStartFromLabel(b.airTime) - hourStartFromLabel(a.airTime) || (a.position || 0) - (b.position || 0)).slice(0, AI_MAX_CANDIDATES);
 }
 function renderAiScopeNote() {
   const n = aiScopeTracks($('#ai-scope').value).length;
@@ -4775,8 +4823,7 @@ function renderOotbPreview() {
   const before = librarySizeWith({ tracks: [], shows: [] }), after = librarySizeWith(extra);
   const over = after > SYNC_SIZE_LIMIT;
   // Possible duplicates from other sources (same artist, song and date).
-  const others = new Set(db.tracks.filter((t) => t.source !== OOTB).map((t) => norm(t.artist) + '|' + norm(t.song) + '|' + t.showDate));
-  const dupes = extra.tracks.filter((t) => others.has(norm(t.artist) + '|' + norm(t.song) + '|' + t.showDate));
+  const dupes = crossSourceDupes(extra, OOTB);
   const rows = ootbFound.slice().sort((a, b) => b.iso.localeCompare(a.iso)).map((x) => {
     const n = x.rows ? x.rows.length : 0;
     const status = x.error ? '<span class="skip">Could not read (' + escapeHtml(x.error) + ')</span>'
@@ -4802,7 +4849,7 @@ async function ootbImport() {
   if ($('#ootb-backup') && $('#ootb-backup').checked) backup();
   // Automatic undo copy (this device only): the ids added, plus the library as it was.
   try {
-    localStorage.setItem(OOTB_UNDO_KEY, JSON.stringify({ at: new Date().toISOString(), trackIds: extra.tracks.map((t) => t.id), showIds: extra.shows.map((s) => s.id),
+    localStorage.setItem(OOTB_UNDO_KEY, JSON.stringify({ at: new Date().toISOString(), label: OOTB, unit: 'shows', trackIds: extra.tracks.map((t) => t.id), showIds: extra.shows.map((s) => s.id),
       dates: extra.shows.map((s) => s.showDate), tracks: extra.tracks.length }));
   } catch (e) { /* storage unavailable: the synced saved copies still allow a restore */ }
   db.shows = db.shows.concat(extra.shows);
@@ -4819,16 +4866,18 @@ function ootbUndoInfo() { try { return JSON.parse(localStorage.getItem(OOTB_UNDO
 function renderOotbUndo() {
   const u = ootbUndoInfo();
   const still = u ? db.tracks.filter((t) => u.trackIds.includes(t.id)).length : 0;
-  $('#ootb-undo').hidden = !still;
-  if (still) $('#ootb-undo').textContent = 'Undo last import (' + still + ' tracks)';
+  ['#ootb-undo', '#hr-undo'].forEach((sel) => {
+    $(sel).hidden = !still;
+    if (still) $(sel).textContent = 'Undo last import (' + (u.label || OOTB) + ', ' + still + ' tracks)';
+  });
 }
 async function ootbUndo() {
   const u = ootbUndoInfo();
   if (!u) return;
   const ids = new Set(u.trackIds), sids = new Set(u.showIds);
   const inPl = db.playlists.filter((p) => p.items.some((i) => ids.has(i.trackId))).length;
-  const ok = await confirmDialog('Undo last Out of the Box import?',
-    'Removes the ' + db.tracks.filter((t) => ids.has(t.id)).length + ' tracks and ' + db.shows.filter((s) => sids.has(s.id)).length + ' shows added on ' + new Date(u.at).toLocaleString() + '. Nothing else in your library changes.' +
+  const ok = await confirmDialog('Undo last ' + (u.label || OOTB) + ' import?',
+    'Removes the ' + db.tracks.filter((t) => ids.has(t.id)).length + ' tracks and ' + db.shows.filter((s) => sids.has(s.id)).length + ' ' + (u.unit || 'shows') + ' added on ' + new Date(u.at).toLocaleString() + '. Nothing else in your library changes.' +
     (inPl ? '\n\nSome of these tracks are in ' + inPl + ' saved playlist(s); they will be kept there as text.' : ''), 'Undo import');
   if (!ok) return;
   const gone = db.tracks.filter((t) => ids.has(t.id));
@@ -4853,6 +4902,231 @@ $('#ootb-preview').addEventListener('click', (e) => { if (e.target.id === 'ootb-
 $('#ootb-n').addEventListener('input', () => { document.querySelector('input[name="ootb-mode"][value="latest"]').checked = true; });
 $('#btn-import').addEventListener('click', () => { renderOotbUndo(); const t = todayIso(); $('#ootb-to').max = t; $('#ootb-from').max = t; $('#ootb-from').min = '2019-01-01'; });
 $('#ai-scope').addEventListener('change', renderAiScopeNote);
+
+/* =========================================================
+   Hourly playlists (XPN2). One record per hour, times in US Eastern.
+   Hours already in the library are skipped, the hour still airing is left out,
+   and existing tracks are never edited. Same preview, size meter, backup and
+   undo as the Out of the Box import (the undo copy is shared: "Undo last import"
+   undoes whichever import came last).
+   ========================================================= */
+const HOURLY = {
+  XPN2: {
+    source: 'XPN2', tag: 'xpn2', earliest: '2019-01-01', defaultN: 3,
+    intro: 'Adds XPN2 playlists one hour at a time from XPN\'s public playlist page (US Eastern times, back to 2019).',
+    headerNote: 'XPN2 hourly playlist',
+    archiveNotes: 'XPN2 playlist: https://xpn.org/wxpn-playlists/',
+    // One file per day, newest first: [{ artist, song, album, timeslice | air_date: "YYYY-MM-DD HH:MM:SS" }, …]
+    async fetchDay(iso) {
+      const res = await fetch('https://origin.xpn.org/xpn2/json/' + iso + '.json', { cache: 'no-store' });
+      if (res.status === 404) return null;
+      if (!res.ok) throw new Error('XPN answered HTTP ' + res.status);
+      const j = await res.json().catch(() => null);
+      const items = Array.isArray(j) ? j : (j && Array.isArray(j.xpn2) ? j.xpn2 : []);
+      return items.map((it) => {
+        const m = /^(\d{4}-\d{2}-\d{2})[ T](\d{2}):(\d{2})/.exec(String(it.timeslice || it.air_date || ''));
+        if (!m) return null;
+        return { date: m[1], hour: +m[2], minute: +m[3], stamp: m[0], artist: ootbClean(it.artist), song: ootbClean(it.song), album: ootbClean(it.album) };
+      }).filter((r) => r && (r.artist || r.song));
+    }
+  }
+};
+// A function (not a constant) so Show Archives can use it while the page is still loading.
+function isHourlySource(s) { return s === 'XPN2'; }
+let hrStation = 'XPN2';
+let hrRun = null;          // { cancelled } while checking
+let hrFound = [];          // hours from the last check
+
+// "Now" in US Eastern time: { date: 'YYYY-MM-DD', hour: 0–23 }.
+function etNow() {
+  const p = Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', hourCycle: 'h23' })
+    .formatToParts(new Date()).map((x) => [x.type, x.value]));
+  return { date: p.year + '-' + p.month + '-' + p.day, hour: parseInt(p.hour, 10) % 24 };
+}
+function hrLabel(h) {
+  const f = (x) => ((x % 12) || 12) + ':00';
+  const ap = (x) => ((x % 24) < 12 ? 'AM' : 'PM');
+  return ap(h) === ap(h + 1) ? f(h) + '-' + f(h + 1) + ' ' + ap(h) + ' ET' : f(h) + ' ' + ap(h) + '-' + f(h + 1) + ' ' + ap(h + 1) + ' ET';
+}
+// Start hour (0–23) of a label like "7:00-8:00 PM ET" or "11:00 AM-12:00 PM ET"; -1 when it is not an hour label.
+function hourStartFromLabel(label) {
+  const m = /^(\d{1,2}):\d{2}(?:\s*([AP]M))?\s*-\s*\d{1,2}:\d{2}\s*([AP]M)/i.exec(String(label || ''));
+  if (!m) return -1;
+  const ap = (m[2] || m[3]).toUpperCase();
+  return (+m[1] % 12) + (ap === 'PM' ? 12 : 0);
+}
+function hrAired(r) { return ((r.hour % 12) || 12) + ':' + String(r.minute).padStart(2, '0') + ' ' + (r.hour < 12 ? 'am' : 'pm'); }
+function hrHas(source, iso, label) {
+  return db.shows.some((s) => s.source === source && s.showDate === iso && s.airTime === label) ||
+    db.tracks.some((t) => t.source === source && t.showDate === iso && t.airTime === label);
+}
+
+function hrProgress(done, total, text) {
+  $('#hr-progress').hidden = false;
+  $('#hr-bar-fill').style.width = (total ? Math.round(done / total * 100) : 0) + '%';
+  $('#hr-progress-text').textContent = text;
+}
+
+// The hours to check, newest first, each with what is known before fetching.
+function hrWindows() {
+  const st = HOURLY[hrStation];
+  const now = etNow();
+  const at = (iso, h) => { let d = iso, x = h; while (x < 0) { x += 24; d = isoAddDays(d, -1); } while (x > 23) { x -= 24; d = isoAddDays(d, 1); } return { date: d, hour: x }; };
+  const timing = (w) => (w.date > now.date || (w.date === now.date && w.hour > now.hour)) ? 'future' : (w.date === now.date && w.hour === now.hour) ? 'airing' : '';
+  const mode = document.querySelector('input[name="hr-mode"]:checked').value;
+  let list = [];
+  if (mode === 'latest') {
+    const n = Math.min(24, Math.max(1, parseInt($('#hr-n').value, 10) || st.defaultN));
+    $('#hr-n').value = n;
+    list.push(at(now.date, now.hour));                        // shown as "Still airing"
+    for (let i = 1; i <= n; i++) list.push(at(now.date, now.hour - i));
+  } else {
+    const iso = $('#hr-date').value;
+    if (!iso) throw new Error('Choose a date.');
+    if (iso < st.earliest) throw new Error('The ' + st.source + ' playlist goes back to ' + labelFromIso(st.earliest) + '.');
+    if (iso > now.date) throw new Error('That date has not happened yet.');
+    const start = parseInt($('#hr-start').value, 10) || 0;
+    const count = Math.min(24, Math.max(1, parseInt($('#hr-count').value, 10) || 1));
+    $('#hr-count').value = count;
+    for (let i = 0; i < count; i++) list.push(at(iso, start + i));
+    list.reverse();
+  }
+  return list.map((w) => Object.assign(w, { label: hrLabel(w.hour), timing: timing(w) }));
+}
+
+async function hrCheck() {
+  let wins;
+  try { wins = hrWindows(); } catch (e) { toast(e.message, 'error'); return; }
+  const st = HOURLY[hrStation];
+  hrRun = { cancelled: false };
+  hrFound = [];
+  $('#hr-preview').innerHTML = '';
+  $('#hr-check').disabled = true; $('#hr-cancel').hidden = false;
+  const days = [...new Set(wins.filter((w) => w.timing !== 'future').map((w) => w.date))];
+  const data = new Map();
+  let done = 0, failed = 0;
+  for (const iso of days) {
+    if (hrRun.cancelled) break;
+    hrProgress(done, days.length, 'Reading ' + st.source + ' for ' + labelFromIso(iso) + '…');
+    try { data.set(iso, await st.fetchDay(iso)); } catch (e) { data.set(iso, { error: e.message }); failed++; }
+    done++;
+    if (done < days.length) await sleep(400);
+  }
+  const wasCancelled = hrRun.cancelled;
+  hrRun = null;
+  $('#hr-check').disabled = false; $('#hr-cancel').hidden = true;
+  hrFound = wins.map((w) => {
+    const day = data.get(w.date);
+    const e = { source: st.source, date: w.date, hour: w.hour, label: w.label, rows: [], exists: hrHas(st.source, w.date, w.label) };
+    if (w.timing) e.state = w.timing;
+    else if (!data.has(w.date)) e.state = 'skipped';
+    else if (day && day.error) { e.state = 'error'; e.error = day.error; }
+    else {
+      // A song belongs to the hour it started in; oldest first within the hour.
+      e.rows = (day || []).filter((r) => r.date === w.date && r.hour === w.hour).sort((a, b) => a.stamp.localeCompare(b.stamp));
+      e.state = e.exists ? 'exists' : e.rows.length ? 'new' : 'empty';
+    }
+    return e;
+  });
+  hrProgress(days.length, days.length, (wasCancelled ? 'Stopped. ' : 'Done. ') + 'Read ' + done + ' day' + (done === 1 ? '' : 's') + (failed ? ', ' + failed + ' could not be read' : '') + '.');
+  renderHrPreview();
+}
+
+function hrBuild() {
+  const st = HOURLY[hrStation];
+  const now = new Date().toISOString();
+  const shows = [], tracks = [];
+  hrFound.filter((x) => x.state === 'new').forEach((x) => {
+    const label = labelFromIso(x.date);
+    shows.push({ id: newId('s'), source: st.source, showDate: x.date, showLabel: label, airTime: x.label, featuredGuest: '',
+      headerNote: x.program ? x.program + ' · ' + st.headerNote : st.headerNote, listedCount: x.rows.length, archiveNotes: st.archiveNotes });
+    x.rows.forEach((r, i) => tracks.push({ id: newId('t'), source: st.source, showDate: x.date, showLabel: label, airTime: x.label, airedAt: hrAired(r),
+      position: i + 1, artist: r.artist, song: r.song, album: r.album, featuredGuest: '', type: 'Studio Track', linkStatus: SEARCH,
+      spotifyUrl: spotifySearchUrl(r.artist, r.song), youtubeUrl: youtubeSearchUrl(r.artist, r.song), notes: r.notes || '', addedAt: now }));
+  });
+  return { shows, tracks };
+}
+
+// Same artist + song on the same date from another source (apostrophes ignored: "Cant" = "Can't").
+function looseDupKey(t) { return spKey(t.artist, t.song) + '|' + t.showDate; }
+function crossSourceDupes(extra, source) {
+  const others = new Set(db.tracks.filter((t) => t.source !== source).map(looseDupKey));
+  return extra.tracks.filter((t) => others.has(looseDupKey(t)));
+}
+
+function renderHrPreview() {
+  const box = $('#hr-preview');
+  const st = HOURLY[hrStation];
+  if (!hrFound.length) { box.innerHTML = ''; return; }
+  const extra = hrBuild();
+  const before = librarySizeWith({ tracks: [], shows: [] }), after = librarySizeWith(extra);
+  const over = after > SYNC_SIZE_LIMIT;
+  const dupes = crossSourceDupes(extra, st.source);
+  const status = (x) => ({
+    new: '<span class="new">New</span>',
+    exists: '<span class="skip">Already imported, skipped</span>',
+    airing: '<span class="skip">Still airing, not imported</span>',
+    future: '<span class="skip">Not aired yet</span>',
+    empty: '<span class="skip">No playlist for this hour</span>',
+    skipped: '<span class="skip">Not checked (stopped)</span>',
+    old: '<span class="skip">' + escapeHtml(x.error || 'Too old') + '</span>',
+    error: '<span class="skip">Could not read (' + escapeHtml(x.error || '') + ')</span>'
+  }[x.state]);
+  const rows = hrFound.map((x) => '<tr><td>' + escapeHtml(labelFromIso(x.date)) + '<br><span class="small muted">' + escapeHtml(x.label) +
+    (x.program ? ' · ' + escapeHtml(x.program) : '') + '</span></td><td>' + (x.rows.length || (x.state === 'new' ? 0 : '–')) + '</td><td>' + status(x) + '</td></tr>').join('');
+  const pct = Math.min(100, Math.round(after / SYNC_SIZE_LIMIT * 100));
+  box.innerHTML =
+    '<table class="ootb-table hr-table"><thead><tr><th>Hour</th><th>Tracks</th><th>Status</th></tr></thead><tbody>' + rows + '</tbody></table>' +
+    (dupes.length ? '<div class="ootb-warn">' + dupes.length + ' track' + (dupes.length === 1 ? ' matches' : 's match') + ' a track from another source on the same date (for example "' + escapeHtml(dupes[0].song) + '"). They will still be imported.</div>' : '') +
+    '<div class="small">Library size after import: <b>' + mb(after) + '</b> of ' + mb(SYNC_SIZE_LIMIT) + ' (now ' + mb(before) + ')</div>' +
+    '<div class="ootb-meter" aria-hidden="true"><span class="' + (over ? 'over' : '') + '" style="width:' + pct + '%"></span></div>' +
+    (over ? '<div class="ootb-warn">Too large to sync. Choose fewer hours.</div>' : '') +
+    '<label class="small" style="display:flex;align-items:center;gap:8px;margin:8px 0"><input type="checkbox" id="hr-backup" checked> Download a backup first</label>' +
+    '<div class="row"><button class="btn btn-indigo" id="hr-import-go"' + (extra.shows.length && !over ? '' : ' disabled') + '>' +
+    (extra.shows.length ? 'Import ' + extra.shows.length + ' hour' + (extra.shows.length === 1 ? '' : 's') + ' (' + extra.tracks.length + ' tracks)' : 'Nothing new to import') + '</button></div>';
+}
+
+function hrImport() {
+  const st = HOURLY[hrStation];
+  const extra = hrBuild();
+  if (!extra.shows.length) return;
+  if (librarySizeWith(extra) > SYNC_SIZE_LIMIT) { toast('Too large to sync. Choose fewer hours.', 'error'); return; }
+  if ($('#hr-backup') && $('#hr-backup').checked) backup();
+  try {
+    localStorage.setItem(OOTB_UNDO_KEY, JSON.stringify({ at: new Date().toISOString(), label: st.source, unit: 'hours',
+      trackIds: extra.tracks.map((t) => t.id), showIds: extra.shows.map((s) => s.id), dates: extra.shows.map((s) => s.showDate), tracks: extra.tracks.length }));
+  } catch (e) { /* storage unavailable: the synced saved copies still allow a restore */ }
+  db.shows = db.shows.concat(extra.shows);
+  db.tracks = db.tracks.concat(extra.tracks);
+  saveDb();
+  renderAll();
+  hrFound = [];
+  $('#hr-preview').innerHTML = '<p class="small"><span class="status ok">' + icon('checkCircle') + 'Imported ' + extra.shows.length + ' hour' + (extra.shows.length === 1 ? '' : 's') + ' and ' + extra.tracks.length + ' tracks.</span> Use Source: ' + escapeHtml(st.source) + ' to see them.</p>';
+  renderOotbUndo();
+  toast('Imported ' + extra.shows.length + ' ' + st.source + ' hour' + (extra.shows.length === 1 ? '' : 's') + ' (' + extra.tracks.length + ' tracks)', 'ok');
+}
+
+function hrSetDefaults() {
+  const now = etNow();
+  const d = $('#hr-date');
+  d.max = now.date; d.min = HOURLY[hrStation].earliest;
+  if (!d.value) d.value = now.date;
+  const s = $('#hr-start');
+  if (!s.options.length) s.innerHTML = Array.from({ length: 24 }, (_, h) => '<option value="' + h + '">' + escapeHtml(hrLabel(h).split('-')[0].replace(/:00$/, ':00 ' + (h < 12 ? 'AM' : 'PM'))) + '</option>').join('');
+  if (s.dataset.touched !== '1') s.value = String((now.hour + 23) % 24);
+}
+
+$('#hr-check').addEventListener('click', hrCheck);
+$('#hr-cancel').addEventListener('click', () => { if (hrRun) hrRun.cancelled = true; });
+$('#hr-undo').addEventListener('click', ootbUndo);
+$('#hr-preview').addEventListener('click', (e) => { if (e.target.id === 'hr-import-go') hrImport(); });
+['#hr-date', '#hr-start', '#hr-count'].forEach((sel) => $(sel).addEventListener('change', (e) => {
+  if (sel === '#hr-start') e.target.dataset.touched = '1';
+  document.querySelector('input[name="hr-mode"][value="pick"]').checked = true;
+}));
+$('#hr-n').addEventListener('input', () => { document.querySelector('input[name="hr-mode"][value="latest"]').checked = true; });
+$('#btn-import').addEventListener('click', hrSetDefaults);
+hrSetDefaults();
 
 // Resource-row logos reuse the header's embedded images.
 document.querySelectorAll('img[data-logo-from]').forEach((img) => { const src = document.querySelector(img.dataset.logoFrom); if (src) img.src = src.src; });
