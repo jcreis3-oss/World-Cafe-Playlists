@@ -465,6 +465,28 @@
   #pd-yt-wrap iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
   .pd-msg { padding: 10px 12px; font-size: 0.82rem; color: #92400e; background: var(--amber-soft); border-top: 1px solid #fcd9a5; }
   .pd-msg[hidden] { display: none; }
+  /* Playlist playback */
+  .pd-queue { padding: 8px 10px 8px 12px; border-bottom: 1px solid var(--border); background: #f8fafc; }
+  .pd-queue[hidden] { display: none; }
+  .pq-line { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; font-weight: 700; }
+  #pq-now { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pq-link { background: none; border: 0; color: var(--indigo); font: inherit; font-weight: 800; cursor: pointer; padding: 0; white-space: nowrap; }
+  .pq-ctrls { display: flex; align-items: center; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+  .pd-btn.pq-main { background: var(--indigo); color: #fff; border-color: var(--indigo); }
+  .pd-btn.pq-tog.on { color: var(--indigo); border-color: var(--indigo); background: #eef2ff; }
+  .pq-sep { flex: 1; }
+  .pq-pref { font: inherit; font-size: 0.72rem; font-weight: 700; border: 1px solid var(--border); background: var(--card); border-radius: 999px; padding: 5px 10px; cursor: pointer; color: var(--muted); white-space: nowrap; }
+  .pq-warn { font-size: 0.76rem; color: #92400e; margin-top: 6px; }
+  .pq-warn[hidden] { display: none; }
+  li.pq-now { background: #eef2ff; box-shadow: inset 3px 0 0 var(--indigo); border-radius: 8px; }
+  li.pq-now .n, .playlist-card li.pq-now > span:first-of-type { color: var(--indigo); font-weight: 800; }
+  li.pq-now .n::before, .playlist-card li.pq-now > span:first-of-type::before { content: '▶ '; }
+  li.pq-skip { opacity: 0.65; }
+  .pq-note { display: block; width: 100%; font-size: 0.75rem; color: #92400e; }
+  .pq-row { flex: none; border: 1px solid var(--border); background: var(--card); color: var(--indigo); border-radius: 8px; width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
+  .pq-row:hover { border-color: var(--indigo); }
+  .playlist-card li { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 3px 4px; }
+  .playlist-card li > span:first-of-type { flex: 1; min-width: 0; }
   .stream.playing { position: relative; box-shadow: 0 0 0 2px currentColor; }
   .stream.playing::after { content: "▶ Playing"; position: absolute; top: -9px; right: -6px; font-size: 0.62rem; font-weight: 800; line-height: 1; padding: 2px 6px; border-radius: 999px; color: #fff; white-space: nowrap; pointer-events: none; }
   .stream.sp.playing::after { background: var(--spotify-text); }
@@ -632,6 +654,10 @@
     .selbar { bottom: 12px; font-size: 0.85rem; white-space: nowrap; }
     .player-dock { left: 0; right: 0; bottom: 0; width: 100%; max-width: none; border-radius: 14px 14px 0 0; border-bottom: none; }
     .pd-btn { width: 40px; height: 40px; }
+    .pd-queue .pd-btn { width: 36px; height: 36px; }
+    .pd-msg { padding: 7px 12px; font-size: 0.76rem; }
+    .pd-queue { padding: 6px 10px 6px 12px; }
+    .pq-ctrls { gap: 4px; }
     .pd-open { padding: 6px 10px; }
     .selbar .long { display: none; }
     .toast-wrap { bottom: 74px; }
@@ -857,6 +883,8 @@
           <button class="btn btn-indigo" id="btn-save-pl">Save playlist</button>
         </div>
         <div class="row" style="margin-top:10px">
+          <button class="btn btn-indigo btn-sm" id="btn-play-sel" data-pq-start="sel"><span class="ico" data-icon="play"></span>Play</button>
+          <span id="pq-resume-sel"></span>
           <button class="btn btn-soft btn-sm" id="btn-clear-sel">Clear selection</button>
           <button class="btn btn-outline btn-sm" id="btn-sp-export"><span class="ico" data-icon="spotify"></span>Export to Spotify</button>
           <button class="btn btn-outline btn-sm" id="btn-yt-export"><span class="ico" data-icon="ytmusic"></span>Export to YouTube</button>
@@ -889,6 +917,7 @@
         <button class="btn btn-indigo btn-sm" id="ai-use">Use as selection</button>
         <button class="btn btn-outline btn-sm" id="ai-add">Add to selection</button>
         <button class="btn btn-soft btn-sm" id="ai-clear">Clear suggestions</button>
+        <button class="btn btn-outline btn-sm" data-pq-start="ai"><span class="ico" data-icon="play"></span>Play picks</button>
       </div>
       <div class="ai-notes">
         <div><b>Suggestions, not guarantees.</b> The model reasons from each track's artist, song, album, source, type and notes plus its own general music knowledge. It cannot listen to the tracks or check tempo, lyrics or recording details.</div>
@@ -905,6 +934,21 @@
     <a class="pd-open" id="pd-open" href="#" target="_blank" rel="noopener noreferrer"></a>
     <button type="button" class="pd-btn" id="pd-min" aria-label="Minimize the player" title="Minimize"></button>
     <button type="button" class="pd-btn" id="pd-close" aria-label="Close the player and stop playback" title="Close"><span class="ico" data-icon="x"></span></button>
+  </div>
+  <div class="pd-queue" id="pd-queue" hidden>
+    <div class="pq-line"><span id="pq-now" aria-live="polite"></span><button type="button" class="pq-link" id="pq-list">Show list</button></div>
+    <div class="pq-ctrls">
+      <button type="button" class="pd-btn" id="pq-prev" aria-label="Previous track" title="Previous"><span class="ico" data-icon="skipBack"></span></button>
+      <button type="button" class="pd-btn pq-main" id="pq-play" aria-label="Pause" title="Pause / play"><span class="ico" data-icon="pause"></span></button>
+      <button type="button" class="pd-btn" id="pq-next" aria-label="Next track" title="Next"><span class="ico" data-icon="skipForward"></span></button>
+      <button type="button" class="pd-btn" id="pq-stop" aria-label="Stop the playlist" title="Stop"><span class="ico" data-icon="stop"></span></button>
+      <span class="pq-sep"></span>
+      <button type="button" class="pd-btn pq-tog" id="pq-shuffle" aria-pressed="false" aria-label="Shuffle" title="Shuffle"><span class="ico" data-icon="shuffle"></span></button>
+      <button type="button" class="pd-btn pq-tog" id="pq-repeat" aria-pressed="false" aria-label="Repeat playlist" title="Repeat playlist"><span class="ico" data-icon="repeat"></span></button>
+      <button type="button" class="pq-pref" id="pq-prefer" title="Which player plays a track first when it has both links">YouTube first</button>
+    </div>
+    <div class="pq-warn" id="pq-changed" hidden>This list changed after you pressed Play. <button type="button" class="pq-link" id="pq-restart">Restart with changes</button></div>
+    <div class="pq-warn" id="pq-android" hidden>Android pauses playback when the screen locks.</div>
   </div>
   <div id="pd-sp-wrap" hidden><div id="pd-sp"></div></div>
   <div id="pd-yt-wrap" hidden><div id="pd-yt"></div></div>
@@ -1178,6 +1222,13 @@ const ICON = {
   trash: S('<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>'),
   checkCircle: S('<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>'),
   searchSmall: S('<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>'),
+  play: S('<polygon points="6 3 20 12 6 21 6 3"/>'),
+  pause: S('<rect x="14" y="4" width="4" height="16" rx="1"/><rect x="6" y="4" width="4" height="16" rx="1"/>'),
+  skipBack: S('<polygon points="19 20 9 12 19 4 19 20"/><path d="M5 19V5"/>'),
+  skipForward: S('<polygon points="5 4 15 12 5 20 5 4"/><path d="M19 5v14"/>'),
+  stop: S('<rect x="6" y="6" width="12" height="12" rx="1"/>'),
+  shuffle: S('<path d="m18 14 4 4-4 4"/><path d="m18 2 4 4-4 4"/><path d="M2 18h1.97a4 4 0 0 0 3.3-1.7l5.45-8.6a4 4 0 0 1 3.3-1.7H22"/><path d="M2 6h1.97a4 4 0 0 1 3.6 2.2"/><path d="M22 18h-6.04a4 4 0 0 1-3.3-1.8l-.36-.45"/>'),
+  repeat: S('<path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/>'),
   gear: S('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>'),
   upload: S('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/>'),
   download: S('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/>'),
@@ -1321,8 +1372,9 @@ function toast(msg, kind) {
   setTimeout(() => el.remove(), kind === 'error' ? 7000 : 3500);
 }
 
-function confirmDialog(title, msg, okLabel) {
+function confirmDialog(title, msg, okLabel, safe) {
   return new Promise((resolve) => {
+    $('#confirm-ok').className = 'btn ' + (safe ? 'btn-indigo' : 'btn-danger');
     $('#confirm-title').textContent = title;
     $('#confirm-msg').textContent = msg;
     $('#confirm-ok').textContent = okLabel || 'Delete';
@@ -1964,31 +2016,38 @@ function renderCreator() {
     '<li data-id="' + t.id + '"' + (membershipFor(t.id).length ? ' class="pl-member"' : '') + '><span class="n">' + (i + 1) + '</span>' +
     '<div class="t"><div><b>' + escapeHtml(t.song) + '</b> · ' + escapeHtml(t.artist) + '</div>' +
     '<div class="meta">' + escapeHtml(t.source + ' · ' + (t.showLabel || t.showDate)) + (t.type === LIVE ? ' · ★ live' : '') + '</div>' + membershipHtml(t.id) + '</div>' +
+    '<button class="pq-row" data-pq-start="sel" data-pq-row aria-label="Play from here" title="Play from here">' + icon('play') + '</button>' +
     '<button class="icon-btn" data-op="up" aria-label="Move up">' + icon('up') + '</button>' +
     '<button class="icon-btn" data-op="down" aria-label="Move down">' + icon('down') + '</button>' +
     '<button class="icon-btn del" data-op="remove" aria-label="Remove">' + icon('x') + '</button></li>').join('');
+  $('#btn-play-sel').disabled = !sel.length;
+  $('#pq-resume-sel').innerHTML = pqResumeHtml('sel');
   $('#export-text').value = sel.map((t) => t.artist + ' - ' + t.song).join('\n');
   $('#btn-save-pl').disabled = !sel.length;
 
   const box = $('#saved-playlists');
-  if (!db.playlists.length) { box.innerHTML = '<p class="lead">No saved playlists yet.</p>'; return; }
+  const keepOpen = new Set([...box.querySelectorAll('.playlist-card[open]')].map((c) => c.dataset.id));
+  if (!db.playlists.length) { box.innerHTML = '<p class="lead">No saved playlists yet.</p>'; pqRender(); return; }
   const sorted = db.playlists.slice().sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
   box.innerHTML = sorted.map((p) => {
     const unmatched = p.items.filter((i) => !i.trackId).length;
-    return '<details class="playlist-card" data-id="' + p.id + '"><summary>' +
+    return '<details class="playlist-card" data-id="' + p.id + '"' + (keepOpen.has(p.id) ? ' open' : '') + '><summary>' +
       '<span class="name">' + escapeHtml(p.name) + '</span>' +
       '<span class="muted small">' + p.items.length + ' tracks · ' + escapeHtml(p.createdAt ? labelFromIso(p.createdAt) : '') + '</span>' +
       (unmatched ? '<span class="badge-amber">' + unmatched + ' text-only</span>' : '') +
       '</summary><div class="body"><ol>' + p.items.map((it) => {
         const l = itemLabel(it);
-        return '<li><span>' + escapeHtml(l.artist) + ' – ' + escapeHtml(l.song) + '</span>' +
-          (l.track ? '' : ' <i>(not in library)</i>') + (it.note ? ' · ' + escapeHtml(it.note) : '') + '</li>';
+        return '<li' + (l.track ? ' data-id="' + l.track.id + '"' : '') + '><span>' + escapeHtml(l.artist) + ' – ' + escapeHtml(l.song) +
+          (l.track ? '' : ' <i>(not in library)</i>') + (it.note ? ' · ' + escapeHtml(it.note) : '') + '</span>' +
+          (l.track ? '<button class="pq-row" data-pq-start="pl:' + p.id + '" data-pq-row aria-label="Play from here" title="Play from here">' + icon('play') + '</button>' : '') + '</li>';
       }).join('') + '</ol>' +
       '<div class="muted small" style="margin-bottom:10px">' + escapeHtml(p.origin || '') + '</div>' +
-      '<div class="row"><button class="btn btn-outline btn-sm" data-pl="load">Load into selection</button>' +
+      '<div class="row"><button class="btn btn-indigo btn-sm" data-pq-start="pl:' + p.id + '">' + icon('play') + 'Play</button>' + pqResumeHtml('pl:' + p.id) +
+      '<button class="btn btn-outline btn-sm" data-pl="load">Load into selection</button>' +
       '<button class="btn btn-outline btn-sm" data-pl="copy">Copy text</button>' +
       '<button class="btn btn-soft btn-sm" data-pl="delete" style="color:var(--danger)">Delete</button></div></div></details>';
   }).join('');
+  pqRender();
 }
 
 function savePlaylist() {
@@ -3761,11 +3820,13 @@ function renderAiPanel() {
       '<div class="t"><div><b>' + escapeHtml(t.song) + '</b> · ' + escapeHtml(t.artist) + '</div>' +
       '<div class="meta">' + escapeHtml(t.source + ' · ' + (t.showLabel || t.showDate)) + (t.type === LIVE ? ' · ★ live' : '') + '</div>' +
       (p.reason ? '<div class="reason">' + escapeHtml(p.reason) + '</div>' : '') + '</div>' +
+      '<button class="pq-row" data-pq-start="ai" data-pq-row aria-label="Play from here" title="Play from here">' + icon('play') + '</button>' +
       '<button class="icon-btn" data-op="up" aria-label="Move up">' + icon('up') + '</button>' +
       '<button class="icon-btn" data-op="down" aria-label="Move down">' + icon('down') + '</button>' +
       '<button class="icon-btn del" data-op="remove" aria-label="Remove">' + icon('x') + '</button></li>';
   }).join('');
   $('#ai-actions').hidden = !picks.length;
+  pqRender();
 
   if (aiBusy) return; // the status line shows progress while a run is going
   const st = $('#ai-status');
@@ -4594,9 +4655,11 @@ function spotifyReady(firstUri) {
             if (!d) return;
             player.spDuration = d.duration || player.spDuration;
             // Spotify plays a preview clip (under 30 s) when it cannot stream the full song.
-            if (player.kind === 'sp' && d.duration > 0 && d.duration <= 31000) showPlayerMsg('Spotify is playing a 30-second preview here. Full songs need this browser signed in to Spotify and allowed to use Spotify cookies inside other sites; otherwise use "Open in Spotify".');
+            if (player.kind === 'sp' && d.duration > 0 && d.duration <= 31000) showPlayerMsg(matchMedia('(max-width: 760px)').matches ? 'Spotify plays a 30-second preview here. Use "Open in Spotify" for the full song.' : 'Spotify is playing a 30-second preview here. Full songs need this browser signed in to Spotify and allowed to use Spotify cookies inside other sites; otherwise use "Open in Spotify".');
             else if (player.kind === 'sp' && d.duration > 31000) hidePlayerMsg();
+            pqOnSp(d);
           });
+          controller.addListener('error', () => { if (pq.active && player.kind === 'sp') pqFail('Spotify could not play this track here'); });
           resolve(controller);
         });
       };
@@ -4619,10 +4682,11 @@ function youtubeReady() {
               const why = { 2: 'The video link is not valid.', 5: 'This video cannot play in this browser\'s player.', 100: 'This video was removed or made private.',
                 101: 'The owner of this video does not allow it to play inside other apps.', 150: 'The owner of this video does not allow it to play inside other apps.',
                 153: 'YouTube could not identify this page, so it would not play the video here.' }[e.data] || 'YouTube could not play this video here (error ' + e.data + ').';
+              if (pq.active && player.kind === 'yt') { pqFail(why.replace(/\.$/, '')); return; }
               showPlayerMsg(why + ' Use "Open in YouTube Music" to play it there.');
             },
-            onAutoplayBlocked: () => showPlayerMsg('Your browser blocked automatic playback. Tap play in the video to start.'),
-            onStateChange: (e) => { if (e.data === 1) hidePlayerMsg(); }
+            onAutoplayBlocked: () => { pq.blocked = true; showPlayerMsg(pq.active ? 'Your browser is waiting for a tap. Tap ▶ to continue the playlist.' : 'Your browser blocked automatic playback. Tap play in the video to start.'); },
+            onStateChange: (e) => { if (e.data === 1) hidePlayerMsg(); pqOnYt(e.data); }
           }
         });
       };
@@ -4645,7 +4709,8 @@ function setDockMin(min) {
   try { localStorage.setItem(PLAYER_MIN_KEY, min ? '1' : '0'); } catch (e) { /* storage unavailable */ }
   updateDockOffsets();
 }
-function playerMinPref() { try { return localStorage.getItem(PLAYER_MIN_KEY) === '1'; } catch (e) { return false; } }
+// On a phone the Spotify player starts compact unless you chose otherwise, to leave more of the page free.
+function playerMinPref() { try { const v = localStorage.getItem(PLAYER_MIN_KEY); return v === null ? matchMedia('(max-width: 760px)').matches : v === '1'; } catch (e) { return false; } }
 
 function showDock(kind, t) {
   player.kind = kind; player.trackId = t.id;
@@ -4691,6 +4756,7 @@ async function playTrack(kind, t) {
 }
 
 function closePlayer() {
+  if (pq.active) { clearTimeout(pq.loadTimer); pq.active = false; pqSave(); pqRender(); }
   try { if (player.sp && player.sp.pause) player.sp.pause(); } catch (e) { /* ignore */ }
   try { if (player.yt && player.yt.pauseVideo) player.yt.pauseVideo(); } catch (e) { /* ignore */ }
   player.kind = ''; player.trackId = '';
@@ -4714,6 +4780,8 @@ function updateDockOffsets() {
   const open = !dock.hidden;
   const r = open ? dock.getBoundingClientRect() : null;
   document.body.style.setProperty('--dock-h', open ? Math.ceil(r.height) + 'px' : '0px');
+  // Anything the app scrolls into view (Show list, jump links, centred rows) stays above the dock.
+  document.documentElement.style.scrollPaddingBottom = open ? Math.ceil(r.height + 12) + 'px' : '';
   ['#selbar', '#list-jump', '#toasts'].forEach((sel) => {
     const el = $(sel);
     if (!el) return;
@@ -4743,6 +4811,14 @@ document.addEventListener('click', (e) => {
     return;   // the link opens in a new tab as before
   }
   e.preventDefault();
+  if (pq.active) {
+    confirmDialog('Stop the playlist?', 'Play "' + t.song + '" on its own and stop "' + pq.name + '"?', 'Play this track', true).then((ok) => {
+      if (!ok) return;
+      pqHalt(true);
+      playTrack(kind, t);
+    });
+    return;
+  }
   playTrack(kind, t);
 });
 $('#pd-close').addEventListener('click', closePlayer);
@@ -4975,7 +5051,15 @@ const HOURLY = {
     archiveNotes: 'XPN2 playlist: https://xpn.org/wxpn-playlists/',
     // One file per day, newest first: [{ artist, song, album, timeslice | air_date: "YYYY-MM-DD HH:MM:SS" }, …]
     async fetchDay(iso) {
-      const res = await fetch('https://origin.xpn.org/xpn2/json/' + iso + '.json', { cache: 'no-store' });
+      let res;
+      try {
+        res = await fetch('https://origin.xpn.org/xpn2/json/' + iso + '.json', { cache: 'no-store' });
+      } catch (e) {
+        // XPN's "not found" page for a day that has not been published yet has no permission header,
+        // so the browser reports a network error instead of 404. For today that just means "no playlist yet".
+        if (iso >= etNow().date) return null;
+        throw new Error('could not reach XPN');
+      }
       if (res.status === 404) return null;
       if (!res.ok) throw new Error('XPN answered HTTP ' + res.status);
       const j = await res.json().catch(() => null);
@@ -5370,6 +5454,272 @@ $('#import-modal').addEventListener('keydown', (e) => {
 $('#csv-files').addEventListener('change', () => setTimeout(ccRefresh, 400));
 $('#ootb-preview').addEventListener('click', (e) => { if (e.target.id === 'ootb-clear') { ootbFound = []; $('#ootb-preview').innerHTML = ''; $('#ootb-progress').hidden = true; ccRefresh(); } });
 $('#hr-preview').addEventListener('click', (e) => { if (e.target.id === 'hr-clear') { hrFound = []; $('#hr-preview').innerHTML = ''; $('#hr-progress').hidden = true; ccRefresh(); } });
+
+/* =========================================================
+   Playlist playback: plays a saved playlist, the current selection or the AI picks
+   one track after another in the dock. YouTube first (full songs everywhere), then
+   Spotify (full or 30-second preview), search-only tracks are skipped.
+   The queue, its order, position and the play preferences are kept on this device
+   only (never synced, never in backups). Starting playback needs a tap; nothing
+   plays by itself after a reload.
+   ========================================================= */
+// var (not const): the Playlist Creator lists render while the page loads, before this code runs.
+var PQ_KEY = STORE_KEY + '.queue';
+var PQ_PREFS_KEY = STORE_KEY + '.playPrefs';
+var pq = { active: false, src: '', name: '', ids: [], order: [], pos: 0, shuffle: false, repeat: false,
+  skipped: {}, fails: 0, endedFor: '', lastUpd: 0, lastPos: 0, dur: 0, paused: false, started: false, loadTimer: null, blocked: false };
+
+function pqPrefs() { try { return Object.assign({ prefer: 'yt', shuffle: false, repeat: false }, JSON.parse(localStorage.getItem(PQ_PREFS_KEY) || '{}')); } catch (e) { return { prefer: 'yt', shuffle: false, repeat: false }; } }
+function pqSavePrefs(change) { try { localStorage.setItem(PQ_PREFS_KEY, JSON.stringify(Object.assign({ prefer: pqPrefs().prefer, shuffle: pq.shuffle, repeat: pq.repeat }, change || {}))); } catch (e) { /* ignore */ } }
+function pqSave() {
+  try {
+    if (!pq.active) { localStorage.removeItem(PQ_KEY); return; }
+    localStorage.setItem(PQ_KEY, JSON.stringify({ src: pq.src, name: pq.name, ids: pq.ids, order: pq.order, pos: pq.pos }));
+  } catch (e) { /* storage unavailable */ }
+}
+function pqSaved() { try { return JSON.parse(localStorage.getItem(PQ_KEY) || 'null'); } catch (e) { return null; } }
+
+// Which player plays a track: the preferred one if it has a direct link, otherwise the other.
+function pqKind(t) {
+  if (!t) return '';
+  const yt = !!ytVideoId(t.youtubeUrl), sp = !!spTrackId(t);
+  if (pqPrefs().prefer === 'sp') return sp ? 'sp' : yt ? 'yt' : '';
+  return yt ? 'yt' : sp ? 'sp' : '';
+}
+// The track ids of a source: 'pl:<id>', 'sel' or 'ai'.
+function pqSourceIds(src) {
+  if (src === 'sel') return db.selection.slice();
+  if (src === 'ai') return db.aiResults ? db.aiResults.picks.map((p) => p.trackId) : [];
+  const p = db.playlists.find((x) => 'pl:' + x.id === src);
+  return p ? p.items.map((i) => i.trackId || null) : [];
+}
+function pqSourceName(src) {
+  if (src === 'sel') return 'Current selection';
+  if (src === 'ai') return 'AI picks';
+  const p = db.playlists.find((x) => 'pl:' + x.id === src);
+  return p ? p.name : '(deleted playlist)';
+}
+function pqShuffled(a) { const b = a.slice(); for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; }
+
+// Play button: shows the count of tracks that will be skipped before starting.
+async function pqStart(src, fromId) {
+  const raw = pqSourceIds(src);
+  const tracks = raw.map((id) => (id ? trackById(id) : null));
+  const playable = tracks.filter((t) => t && pqKind(t));
+  const noLink = tracks.filter((t) => t && !pqKind(t)).length, textOnly = tracks.filter((t) => !t).length;
+  if (!playable.length) { toast('Nothing in this list has a direct YouTube or Spotify link yet. Use Resolve links first.', 'error'); return; }
+  const skip = noLink + textOnly;
+  if (skip) {
+    const yt = playable.filter((t) => pqKind(t) === 'yt').length, sp = playable.length - yt;
+    const ok = await confirmDialog('Play ' + playable.length + ' of ' + raw.length + ' tracks?',
+      playable.length + ' will play (' + yt + ' YouTube, ' + sp + ' Spotify). ' + skip + ' will be skipped: ' +
+      [noLink ? noLink + ' with search links only' : '', textOnly ? textOnly + ' not in your library' : ''].filter(Boolean).join(', ') +
+      '. You can find direct links with Resolve links.', 'Play ' + playable.length, true);
+    if (!ok) return;
+  }
+  if (pq.active) pqHalt();
+  pq.active = true; pq.src = src; pq.name = pqSourceName(src);
+  pq.ids = playable.map((t) => t.id);
+  pq.skipped = {};
+  tracks.forEach((t, i) => { if (t && !pqKind(t)) pq.skipped[t.id] = 'Search links only'; });
+  pq.fails = 0;
+  const prefs = pqPrefs(); pq.shuffle = prefs.shuffle; pq.repeat = prefs.repeat;
+  const first = fromId && pq.ids.includes(fromId) ? fromId : null;
+  pq.order = pq.shuffle ? pqShuffled(pq.ids) : pq.ids.slice();
+  if (first) { if (pq.shuffle) pq.order = [first].concat(pq.order.filter((x) => x !== first)); pq.pos = pq.order.indexOf(first); } else pq.pos = 0;
+  if (fromId && !first) toast('That track has no direct link, so the list starts from the next playable track.');
+  pqPlayCurrent();
+}
+
+function pqPlayCurrent() {
+  clearTimeout(pq.loadTimer);
+  const id = pq.order[pq.pos];
+  const t = trackById(id);
+  pq.endedFor = ''; pq.altFor = ''; pq.spFresh = false; pq.lastUpd = 0; pq.lastPos = 0; pq.dur = 0; pq.paused = false; pq.started = false; pq.blocked = false;
+  pqSave();
+  if (!t || !pqKind(t)) { pq.skipped[id] = t ? 'No direct link any more' : 'Removed from your library'; pqRender(); return pqNext(true); }
+  const kind = pqKind(t);
+  playTrack(kind, t);
+  pqRender();
+  // A track that has not started after 10 seconds is skipped (unless the browser is waiting for a tap).
+  pq.loadTimer = setTimeout(() => { if (pq.active && pq.order[pq.pos] === id && !pq.started && !pq.blocked) pqFail('Did not start within 10 seconds'); }, 10000);
+}
+function pqNext(auto) {
+  if (!pq.active) return;
+  if (pq.pos < pq.order.length - 1) pq.pos++;
+  else if (pq.repeat) { pq.order = pq.shuffle ? pqShuffled(pq.ids) : pq.ids.slice(); pq.pos = 0; }
+  else { if (auto) { toast('Finished "' + pq.name + '".'); pqStop(); } else toast('This is the last track.'); return; }
+  pqPlayCurrent();
+}
+function pqPrev() {
+  if (!pq.active) return;
+  if (pq.pos > 0) { pq.pos--; pqPlayCurrent(); } else toast('This is the first track.');
+}
+function pqEnded() {
+  const id = pq.order[pq.pos];
+  if (!pq.active || pq.endedFor === id) return;
+  pq.endedFor = id; pq.fails = 0;
+  pqNext(true);
+}
+function pqFail(reason) {
+  if (!pq.active) return;
+  const id = pq.order[pq.pos];
+  if (pq.endedFor === id) return;
+  // The other player gets one try before the track is skipped (e.g. a YouTube video blocked on other sites).
+  const t = trackById(id);
+  const other = player.kind === 'yt' ? (t && spTrackId(t) ? 'sp' : '') : (t && ytVideoId(t.youtubeUrl) ? 'yt' : '');
+  if (other && pq.altFor !== id) {
+    pq.altFor = id;
+    clearTimeout(pq.loadTimer);
+    pq.started = false; pq.spFresh = false; pq.lastUpd = 0; pq.lastPos = 0; pq.dur = 0;
+    playTrack(other, t);
+    showPlayerMsg((other === 'sp' ? 'YouTube' : 'Spotify') + ' could not play this here (' + reason.toLowerCase() + '), so it is playing on ' + (other === 'sp' ? 'Spotify' : 'YouTube') + ' instead.');
+    pq.loadTimer = setTimeout(() => { if (pq.active && pq.order[pq.pos] === id && !pq.started && !pq.blocked) pqFail('Did not start within 10 seconds'); }, 10000);
+    return;
+  }
+  pq.endedFor = id;
+  clearTimeout(pq.loadTimer);
+  pq.skipped[id] = reason;
+  pq.fails++;
+  pqRender();
+  if (pq.fails >= 3) { showPlayerMsg('Stopped the playlist after 3 tracks in a row could not play here.'); pqHalt(true); return; }
+  showPlayerMsg('Skipped: ' + reason + '. Moving to the next track…');
+  setTimeout(() => { if (pq.active && pq.order[pq.pos] === id) pqNext(true); }, 3000);
+}
+// Stop playlist mode. keepDock leaves the current track's player showing.
+function pqHalt(keepDock) {
+  clearTimeout(pq.loadTimer);
+  pq.active = false;
+  pqSave();
+  if (!keepDock) { try { if (player.sp && player.sp.pause) player.sp.pause(); } catch (e) { /* ignore */ } try { if (player.yt && player.yt.pauseVideo) player.yt.pauseVideo(); } catch (e) { /* ignore */ } }
+  pqRender();
+}
+function pqStop() { pqHalt(false); closePlayer(); }
+function pqTogglePause() {
+  if (!pq.active) return;
+  try {
+    if (player.kind === 'yt' && player.yt) { if (player.yt.getPlayerState() === 1) player.yt.pauseVideo(); else player.yt.playVideo(); }
+    if (player.kind === 'sp' && player.sp) player.sp.togglePlay();
+  } catch (e) { /* the player is still loading */ }
+  pq.blocked = false;
+}
+function pqSetShuffle(on) {
+  pq.shuffle = on;
+  if (pq.active) {
+    const cur = pq.order[pq.pos];
+    if (on) { const done = pq.order.slice(0, pq.pos + 1); pq.order = done.concat(pqShuffled(pq.ids.filter((x) => !done.includes(x)))); }
+    else { pq.order = pq.ids.slice(); pq.pos = pq.order.indexOf(cur); }
+    pqSave();
+  }
+  pqSavePrefs({ shuffle: on }); pqRender();
+}
+function pqSetRepeat(on) { pq.repeat = on; pqSavePrefs({ repeat: on }); pqRender(); }
+function pqSetPrefer(v) { pqSavePrefs({ prefer: v }); pqRender(); toast('Playlists now play ' + (v === 'sp' ? 'Spotify' : 'YouTube') + ' first (from the next track).'); }
+
+// Player signals.
+function pqOnSp(d) {
+  if (!pq.active || player.kind !== 'sp') return;
+  // Right after a new track loads, Spotify can resend the previous track's final update (position = length).
+  // Nothing counts until this track has reported a fresh start near 0 s.
+  if (!pq.spFresh) { if ((d.position || 0) < 3000) pq.spFresh = true; else return; }
+  pq.lastUpd = Date.now(); pq.lastPos = d.position || 0; pq.dur = d.duration || pq.dur; pq.paused = !!d.isPaused;
+  if (d.position > 0 && !d.isPaused) { pq.started = true; clearTimeout(pq.loadTimer); }
+  pqRenderState();
+  // Spotify never reports "finished": the position reaches the length and the updates stop.
+  if (d.duration > 0 && d.position >= d.duration - 400) pqEnded();
+}
+function pqOnYt(state) {
+  if (!pq.active || player.kind !== 'yt') return;
+  if (state === 1) { pq.started = true; pq.paused = false; pq.blocked = false; clearTimeout(pq.loadTimer); }
+  if (state === 2) pq.paused = true;
+  if (state === 0) pqEnded();
+  pqRenderState();
+}
+// Backup for Spotify: near the end and no update for 3 seconds counts as finished.
+setInterval(() => {
+  if (pq.active && player.kind === 'sp' && pq.started && !pq.paused && pq.dur > 0 &&
+      pq.lastPos >= pq.dur - 1500 && Date.now() - pq.lastUpd > 3000) pqEnded();
+}, 1000);
+
+// ---------- Dock bar ----------
+function pqRenderState() {
+  const b = $('#pq-play');
+  if (b) { b.innerHTML = icon(pq.paused ? 'play' : 'pause'); b.setAttribute('aria-label', pq.paused ? 'Play' : 'Pause'); }
+}
+function pqRender() {
+  if (!pq) return;
+  const bar = $('#pd-queue');
+  bar.hidden = !pq.active;
+  if (pq.active) {
+    $('#pq-now').textContent = 'Now playing: ' + (pq.pos + 1) + ' of ' + pq.order.length + ' · ' + pq.name;
+    $('#pq-shuffle').classList.toggle('on', pq.shuffle); $('#pq-shuffle').setAttribute('aria-pressed', pq.shuffle);
+    $('#pq-repeat').classList.toggle('on', pq.repeat); $('#pq-repeat').setAttribute('aria-pressed', pq.repeat);
+    $('#pq-prefer').textContent = pqPrefs().prefer === 'sp' ? 'Spotify first' : 'YouTube first';
+    const now = JSON.stringify(pqSourceIds(pq.src).filter((id) => id && pqKind(trackById(id))));
+    $('#pq-changed').hidden = now === JSON.stringify(pq.ids);   // the list was edited after Play
+    $('#pq-android').hidden = !/Android/i.test(navigator.userAgent);
+    pqRenderState();
+  }
+  pqMark();
+  if (!$('#player-dock').hidden) updateDockOffsets();
+}
+// Marks the playing row (and skipped rows) in the saved playlist card, the selection and the AI picks.
+function pqMark() {
+  document.querySelectorAll('.pq-now, .pq-skip').forEach((el) => el.classList.remove('pq-now', 'pq-skip'));
+  document.querySelectorAll('[data-pq-note]').forEach((el) => el.remove());
+  if (!pq.active) return;
+  const cur = pq.order[pq.pos];
+  const scope = pq.src === 'sel' ? '#builder-list' : pq.src === 'ai' ? '#ai-results' : '.playlist-card[data-id="' + CSS.escape(pq.src.slice(3)) + '"]';
+  document.querySelectorAll(scope + ' li[data-id]').forEach((li) => {
+    if (li.dataset.id === cur) li.classList.add('pq-now');
+    else if (pq.skipped[li.dataset.id]) {
+      li.classList.add('pq-skip');
+      (li.querySelector('.t') || li.querySelector('span') || li).insertAdjacentHTML('beforeend', '<span class="pq-note" data-pq-note>Skipped: ' + escapeHtml(pq.skipped[li.dataset.id]) + '</span>');
+    }
+  });
+}
+function pqShowList() {
+  if (pq.src === 'sel' || pq.src === 'ai') { switchView('creator'); const el = document.querySelector((pq.src === 'sel' ? '#builder-list' : '#ai-results') + ' .pq-now'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+  openSavedPlaylist(pq.src.slice(3));
+  setTimeout(() => { const el = document.querySelector('.playlist-card .pq-now'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 350);
+}
+
+$('#pd-queue').addEventListener('click', (e) => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  if (b.id === 'pq-prev') pqPrev();
+  if (b.id === 'pq-play') pqTogglePause();
+  if (b.id === 'pq-next') { pq.fails = 0; pqNext(false); }
+  if (b.id === 'pq-stop') pqStop();
+  if (b.id === 'pq-shuffle') pqSetShuffle(!pq.shuffle);
+  if (b.id === 'pq-repeat') pqSetRepeat(!pq.repeat);
+  if (b.id === 'pq-prefer') pqSetPrefer(pqPrefs().prefer === 'sp' ? 'yt' : 'sp');
+  if (b.id === 'pq-list') pqShowList();
+  if (b.id === 'pq-restart') { const cur = pq.order[pq.pos]; pqStart(pq.src, cur); }
+});
+// Play buttons and per-row "play from here".
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-pq-start]');
+  if (!b) return;
+  e.preventDefault();
+  const li = b.closest('li[data-id]');
+  pqStart(b.dataset.pqStart, b.hasAttribute('data-pq-row') && li ? li.dataset.id : null);
+});
+// After a reload: offer to resume (never starts by itself).
+function pqResumeHtml(src) {
+  if (!pq) return '';
+  const s = pqSaved();
+  if (!s || s.src !== src || pq.active || !s.order || !s.order.length) return '';
+  return '<button class="btn btn-soft btn-sm" data-pq-resume="' + escapeHtml(src) + '">Resume at track ' + (s.pos + 1) + ' of ' + s.order.length + '</button>';
+}
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-pq-resume]');
+  if (!b) return;
+  const s = pqSaved();
+  if (!s) return;
+  const id = s.order[s.pos];
+  pqStart(s.src, id);
+});
 
 // Resource-row logos reuse the header's embedded images.
 document.querySelectorAll('img[data-logo-from]').forEach((img) => { const src = document.querySelector(img.dataset.logoFrom); if (src) img.src = src.src; });
