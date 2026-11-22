@@ -498,6 +498,31 @@
   .form-hint { font-size: 0.75rem; color: var(--faint); margin-top: 4px; }
   .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
   .section { border-top: 1px solid var(--border); padding-top: 18px; margin-top: 18px; }
+  /* Imports, Connections, etc. */
+  .topnav { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; min-width: 0; flex: 0 1 auto; }
+  .cc-btn { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; background: var(--indigo); color: #fff; border: 0; border-radius: 12px;
+    padding: 11px 16px; font: inherit; font-weight: 800; font-size: 0.9rem; cursor: pointer; box-shadow: 0 2px 6px rgba(79, 70, 229, 0.25); flex: none; }
+  .cc-btn:hover { filter: brightness(1.08); }
+  .cc-btn:focus-visible { outline: 3px solid rgba(79, 70, 229, 0.35); outline-offset: 2px; }
+  .cc-btn .ico svg { width: 18px; height: 18px; }
+  #import-modal .cc-top { position: sticky; top: -24px; margin: -24px -24px 0; padding: 24px 24px 8px; background: var(--card); z-index: 3; border-bottom: 1px solid var(--border); }
+  #import-modal .cc-top .modal-head { margin-bottom: 6px; }
+  .cc-tools { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .cc-note { font-size: 0.82rem; color: var(--muted); margin: 0; }
+  .cc-all { background: none; border: 0; color: var(--indigo); font: inherit; font-weight: 800; font-size: 0.85rem; cursor: pointer; white-space: nowrap; padding: 2px 0; }
+  .cc-group { font-size: 0.7rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 18px 0 0; }
+  .cc-sec.section { padding-top: 0; margin-top: 6px; }
+  .cc-group + .cc-sec.section { border-top-color: transparent; }
+  .cc-head { display: flex; align-items: center; gap: 10px; padding: 12px 2px; cursor: pointer; user-select: none; border-radius: 8px; }
+  .cc-head:focus-visible { outline: 3px solid rgba(79, 70, 229, 0.3); }
+  .cc-head h3 { flex: 1; margin: 0 !important; }
+  .cc-chip { font-size: 0.72rem; font-weight: 700; color: #64748b; background: var(--pill); border-radius: 999px; padding: 2px 9px; white-space: nowrap; }
+  .cc-chip.busy { color: #92400e; background: var(--amber-soft); }
+  .cc-chev { width: 22px; height: 22px; flex: none; color: #64748b; transition: transform 0.15s; }
+  .cc-sec.open .cc-chev { transform: rotate(180deg); }
+  .cc-sec.locked .cc-chev { opacity: 0.35; }
+  .cc-body { padding: 2px 0 6px; }
+  #import-modal .cc-sec { scroll-margin-top: var(--cc-top-h, 120px); }
   .section h3 { font-size: 1rem; font-weight: 800; margin-bottom: 4px; }
   .section p { margin-bottom: 10px; }
   .file-drop { display: flex; flex-direction: column; align-items: center; gap: 6px; border: 2px dashed var(--border-strong); border-radius: 12px; padding: 22px; text-align: center; color: var(--muted); cursor: pointer; font-weight: 600; margin: 10px 0; }
@@ -523,6 +548,9 @@
   }
   @media (max-width: 1100px) {
     .topbar .container { flex-wrap: wrap; }
+    .topnav { display: contents; }
+    .cc-btn { order: 1; margin-left: auto; align-self: center; }
+    .topbar .tabs { order: 2; }
     .tabs { flex: 1 1 100%; }
     .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .metric.wide-when-paired { grid-column: 1 / -1; } /* the 5th card fills the last row when cards sit two per row */
@@ -611,7 +639,11 @@
     /* Phone fixes: these need the same specificity as "table.tracks td" above. */
     table.tracks td.c-check { position: absolute; top: 14px; right: 14px; left: auto; width: auto; padding: 0 !important; }
     table.tracks td.c-type, table.tracks td.c-status { display: inline-flex; width: auto; vertical-align: middle; margin: 6px 10px 2px 0; }
-    .panel-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+    .panel-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    .cc-btn { order: 3; width: 100%; margin-left: 0; justify-content: center; }
+    #import-modal .cc-top { top: -18px; margin: -18px -18px 0; padding: 18px 18px 8px; }
+    .cc-tools { flex-direction: column; gap: 4px; }
+    .cc-all { align-self: flex-end; }
     .panel-actions .btn { padding: 9px 6px; font-size: 0.82rem; gap: 5px; }
     .brand { flex: 1 1 100%; }
     .review-item .vs { grid-template-columns: 1fr; gap: 8px; }
@@ -643,12 +675,15 @@
         <div class="subtitle">Daily Broadcast Playlists, Live Studio 1A Sessions &amp; Streaming Index</div>
       </div>
     </div>
+    <div class="topnav">
+    <button type="button" class="cc-btn" id="btn-import"><span class="ico" data-icon="gear"></span><span>Imports, Connections, etc.</span></button>
     <nav class="tabs" role="tablist">
       <button class="tab active" data-view="songs" role="tab"><span class="ico" data-icon="listMusic"></span>Song Explorer <span class="count" id="tc-songs">0</span></button>
       <button class="tab" data-view="shows" role="tab"><span class="ico" data-icon="calendar"></span>Show Archives <span class="count" id="tc-shows">0</span></button>
       <button class="tab" data-view="live" role="tab"><span class="ico" data-icon="mic"></span>Live Sessions &amp; Artists <span class="count" id="tc-live">0</span></button>
       <button class="tab" data-view="creator" role="tab"><span class="ico" data-icon="radio"></span>Playlist Creator <span class="count" id="tc-creator">0</span></button>
     </nav>
+    </div>
   </div>
 </header>
 
@@ -736,7 +771,6 @@
         <div class="panel-title"><span class="ico" data-icon="filter"></span>Search &amp; Filter Tracks</div>
         <div class="panel-actions">
           <button class="btn btn-outline" id="btn-resolve" title="Find direct Spotify links for tracks still marked Search Query"><span class="ico" data-icon="wand"></span>Resolve links</button>
-          <button class="btn btn-outline" id="btn-import"><span class="ico" data-icon="upload"></span>Import</button>
           <button class="btn btn-indigo" id="btn-add"><span class="ico" data-icon="plus"></span>Add Track</button>
         </div>
       </div>
@@ -841,7 +875,7 @@
     <div class="card panel ai-panel" id="ai-panel">
       <h2><span class="ico" data-icon="sparkles" style="color:var(--amber)"></span>AI Playlist Builder <span class="stat" id="ai-left" hidden></span></h2>
       <p class="lead">Describe the playlist in your own words: genre, instruments, mood, subject, era, tempo, or anything else. Picks come only from tracks already in your library.</p>
-      <div class="ai-setup" id="ai-setup" hidden>Set up the AI relay first: open <b>Import, Connections &amp; Data</b> and fill in the <b>AI relay</b> section.</div>
+      <div class="ai-setup" id="ai-setup" hidden>Set up the AI relay first: open <b>Imports, Connections, etc.</b> and fill in the <b>AI relay</b> section.</div>
       <textarea id="ai-instruction" maxlength="2000" placeholder="For example: warm acoustic songs with fingerpicked guitar for a slow Sunday morning"></textarea>
       <div class="ai-controls">
         <label class="grow">Source<select id="ai-scope"></select></label>
@@ -891,8 +925,14 @@
 <!-- Import / library data modal -->
 <div class="modal-backdrop" id="import-modal" role="dialog" aria-modal="true" aria-labelledby="import-title">
   <div class="modal wide">
-    <div class="modal-head"><h2 id="import-title">Import, Connections &amp; Data</h2><button class="close-x" id="import-close" aria-label="Close">×</button></div>
-    <h3 style="font-size:1rem;font-weight:800">CSV import</h3>
+    <div class="cc-top">
+    <div class="modal-head"><h2 id="import-title">Imports, Connections, etc.</h2><button class="close-x" id="import-close" aria-label="Close">×</button></div>
+      <div class="cc-tools"><p class="cc-note">XPN2, AltRadio and Out of the Box can be imported here; World Cafe daily still comes through the Sheet.</p><button type="button" class="cc-all" id="cc-all">Expand all</button></div>
+    </div>
+    <div class="cc-group">Imports</div>
+    <div class="section cc-sec" id="csv-import">
+      <div class="cc-head" role="button" tabindex="0" aria-expanded="false" aria-controls="csv-import-body"><h3>CSV import</h3><span class="cc-chip" hidden></span><svg class="cc-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></div>
+      <div class="cc-body" id="csv-import-body" hidden>
     <p>Pick one or more CSV exports of your Sheet tabs: Playlists, AltRadio, Show_Archives, Saved_Playlists. Each file's format is detected automatically and you see a preview before anything is saved. Tracks already in the library (same artist + song + show date) are skipped, and Spotify / YouTube URLs are stored exactly as they appear in the file.</p>
     <label class="file-drop" id="csv-drop">
       <span class="ico" data-icon="upload"></span>
@@ -901,72 +941,11 @@
     </label>
     <div id="import-preview"></div>
     <div id="import-report"></div>
-
-    <div class="section" id="connections">
-      <h3 style="display:flex;align-items:center;gap:8px"><span class="ico" data-icon="spotify"></span>Spotify connection</h3>
-      <p>Paste the Client ID from your Spotify developer app once; it is saved in this browser only. Sign-in uses PKCE (no client secret), asks only for permission to create private playlists, and lasts about an hour in this tab.</p>
-      <div class="row">
-        <input type="text" id="sp-client-id" placeholder="Spotify Client ID" autocomplete="off" spellcheck="false" style="flex:1 1 280px;width:auto;font-family:ui-monospace,Consolas,monospace">
-        <button class="btn btn-indigo" id="sp-connect"><span class="ico" data-icon="spotify"></span>Connect</button>
-        <button class="btn btn-soft" id="sp-disconnect" hidden>Disconnect</button>
       </div>
-      <div class="small" id="sp-status" style="margin-top:8px"></div>
-      <div class="small muted" style="margin-top:4px">Redirect URI for this page: <code id="sp-redirect"></code></div>
     </div>
-
-    <div class="section" id="yt-connection">
-      <h3 style="display:flex;align-items:center;gap:8px"><span class="ico" data-icon="ytmusic"></span>YouTube API key</h3>
-      <p>Paste the API key from your Google Cloud project once. It is used only to search YouTube (no sign-in), is saved in this browser only, and is never included in backups or written into the app file.</p>
-      <div class="row">
-        <input type="text" id="yt-key" placeholder="YouTube Data API key" autocomplete="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-bwignore="true" data-form-type="other" style="flex:1 1 280px;width:auto;font-family:ui-monospace,Consolas,monospace;-webkit-text-security:disc">
-        <button class="btn btn-indigo" id="yt-save">Save key</button>
-        <button class="btn btn-soft" id="yt-clear">Clear</button>
-      </div>
-      <div class="small" id="yt-status" style="margin-top:8px"></div>
-    </div>
-
-    <div class="section" id="yta-connection">
-      <h3 style="display:flex;align-items:center;gap:8px"><span class="ico" data-icon="ytmusic"></span>YouTube account (playlist export)</h3>
-      <p>Paste the OAuth Client ID from your Google Cloud project once; it is not a secret and is saved in this browser. Sign-in uses Google's own pop-up (no client secret), asks to manage your YouTube account so the app can create private playlists, and lasts about an hour in this tab. Works only while Google Advanced Protection is off; because the app is in Testing mode, Google asks you to re-approve about once a week.</p>
-      <div class="row">
-        <input type="text" id="yta-client-id" placeholder="Google OAuth Client ID (…apps.googleusercontent.com)" autocomplete="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-bwignore="true" style="flex:1 1 280px;width:auto;font-family:ui-monospace,Consolas,monospace">
-        <button class="btn btn-indigo" id="yta-connect"><span class="ico" data-icon="ytmusic"></span>Connect YouTube</button>
-      </div>
-      <div class="small" id="yta-status" style="margin-top:8px"></div>
-    </div>
-
-    <div class="section" id="sync-connection">
-      <h3 style="display:flex;align-items:center;gap:8px"><span class="ico" data-icon="radio"></span>Sync between devices</h3>
-      <p>Keeps your library, playlists and selection the same on your computer and phone, through your own Cloudflare Worker (it uses the AI relay address and token below, so set those up first on each device). The YouTube API key, the relay token, the Worker address and all sign-ins stay on each device and are never synced. The last 5 synced copies are kept, so a change can be undone.</p>
-      <div class="row">
-        <label class="small muted" style="display:flex;align-items:center;gap:8px">This device's name <input type="text" id="sync-device" maxlength="30" style="width:150px"></label>
-      </div>
-      <div class="row" style="margin-top:8px">
-        <button class="btn btn-indigo" id="sync-toggle">Turn on sync</button>
-        <button class="btn btn-outline" id="sync-now">Sync now</button>
-        <button class="btn btn-outline" id="sync-history">Saved copies</button>
-        <button class="btn btn-soft" id="sync-undo" hidden>Undo last replace</button>
-      </div>
-      <div class="small" id="sync-status" style="margin-top:8px"></div>
-      <div class="sync-copies" id="sync-copies"></div>
-    </div>
-
-    <div class="section" id="ai-connection">
-      <h3 style="display:flex;align-items:center;gap:8px"><span class="ico" data-icon="sparkles" style="color:var(--amber)"></span>AI relay (playlist builder)</h3>
-      <p>The AI Playlist Builder talks to your own Cloudflare Worker, which holds the Ollama key. Paste the Worker address and the app token once. Both are saved in this browser only; the token is never included in backups or written into the app file.</p>
-      <div class="row">
-        <input type="text" id="ai-url" placeholder="Worker address (https://…workers.dev)" autocomplete="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-bwignore="true" data-form-type="other" style="flex:1 1 280px;width:auto;font-family:ui-monospace,Consolas,monospace">
-      </div>
-      <div class="row" style="margin-top:8px">
-        <input type="text" id="ai-token" placeholder="App token" autocomplete="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-bwignore="true" data-form-type="other" style="flex:1 1 280px;width:auto;font-family:ui-monospace,Consolas,monospace;-webkit-text-security:disc">
-        <button class="btn btn-indigo" id="ai-save">Save</button>
-        <button class="btn btn-soft" id="ai-forget">Clear</button>
-      </div>
-      <div class="small" id="ai-conn-status" style="margin-top:8px"></div>
-    </div>
-
-    <div class="section" id="ootb-import">
-      <h3 style="display:flex;align-items:center;gap:8px"><span class="src-tag ootb">Out of the Box</span> Import from the WHRO archive</h3>
+    <div class="section cc-sec" id="ootb-import">
+      <div class="cc-head" role="button" tabindex="0" aria-expanded="false" aria-controls="ootb-import-body"><h3 style="display:flex;align-items:center;gap:8px"><span class="src-tag ootb">Out of the Box</span> Import from the WHRO archive</h3><span class="cc-chip" hidden></span><svg class="cc-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></div>
+      <div class="cc-body" id="ootb-import-body" hidden>
       <p>Adds Out of the Box playlists from WHRO's public archive (Mon–Thu 7–9 pm, Sat 1–5 pm ET, since 2019). Shows already in your library are skipped, and nothing already in your library is changed. You see a preview before anything is saved.</p>
       <div class="ootb-modes" role="radiogroup" aria-label="What to import">
         <label><input type="radio" name="ootb-mode" value="latest" checked> Latest <input type="number" id="ootb-n" value="5" min="1" max="22" inputmode="numeric" aria-label="Number of shows"> shows</label>
@@ -979,10 +958,11 @@
       </div>
       <div id="ootb-progress" hidden><div class="ootb-bar"><span id="ootb-bar-fill"></span></div><div class="small" id="ootb-progress-text" role="status"></div></div>
       <div id="ootb-preview"></div>
+      </div>
     </div>
-
-    <div class="section" id="hourly-import">
-      <h3 style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">Hourly playlists <span class="src-tag xpn2" id="hr-tag">XPN2</span></h3>
+    <div class="section cc-sec" id="hourly-import">
+      <div class="cc-head" role="button" tabindex="0" aria-expanded="false" aria-controls="hourly-import-body"><h3 style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">Hourly playlists <span class="src-tag xpn2" id="hr-tag">XPN2</span></h3><span class="cc-chip" hidden></span><svg class="cc-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></div>
+      <div class="cc-body" id="hourly-import-body" hidden>
       <div class="seg hr-switch" id="hr-station" role="tablist" aria-label="Station">
         <button class="seg-btn active" data-station="XPN2" role="tab">XPN2</button>
         <button class="seg-btn" data-station="AltRadio" role="tab">AltRadio</button>
@@ -1000,20 +980,87 @@
       </div>
       <div id="hr-progress" hidden><div class="ootb-bar hr-bar"><span id="hr-bar-fill"></span></div><div class="small" id="hr-progress-text" role="status"></div></div>
       <div id="hr-preview"></div>
+      </div>
     </div>
-
-    <div class="section">
-      <h3>Live feeds</h3>
-      <p>XPN2, AltRadio and Out of the Box can be imported above; World Cafe daily still comes through the Sheet.</p>
+    <div class="cc-group">Connections</div>
+    <div class="section cc-sec" id="connections">
+      <div class="cc-head" role="button" tabindex="0" aria-expanded="false" aria-controls="connections-body"><h3 style="display:flex;align-items:center;gap:8px"><span class="ico" data-icon="spotify"></span>Spotify connection</h3><span class="cc-chip" hidden></span><svg class="cc-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></div>
+      <div class="cc-body" id="connections-body" hidden>
+      <p>Paste the Client ID from your Spotify developer app once; it is saved in this browser only. Sign-in uses PKCE (no client secret), asks only for permission to create private playlists, and lasts about an hour in this tab.</p>
+      <div class="row">
+        <input type="text" id="sp-client-id" placeholder="Spotify Client ID" autocomplete="off" spellcheck="false" style="flex:1 1 280px;width:auto;font-family:ui-monospace,Consolas,monospace">
+        <button class="btn btn-indigo" id="sp-connect"><span class="ico" data-icon="spotify"></span>Connect</button>
+        <button class="btn btn-soft" id="sp-disconnect" hidden>Disconnect</button>
+      </div>
+      <div class="small" id="sp-status" style="margin-top:8px"></div>
+      <div class="small muted" style="margin-top:4px">Redirect URI for this page: <code id="sp-redirect"></code></div>
+      </div>
     </div>
-
-    <div class="section">
-      <h3>Backup &amp; restore</h3>
+    <div class="section cc-sec" id="yt-connection">
+      <div class="cc-head" role="button" tabindex="0" aria-expanded="false" aria-controls="yt-connection-body"><h3 style="display:flex;align-items:center;gap:8px"><span class="ico" data-icon="ytmusic"></span>YouTube API key</h3><span class="cc-chip" hidden></span><svg class="cc-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></div>
+      <div class="cc-body" id="yt-connection-body" hidden>
+      <p>Paste the API key from your Google Cloud project once. It is used only to search YouTube (no sign-in), is saved in this browser only, and is never included in backups or written into the app file.</p>
+      <div class="row">
+        <input type="text" id="yt-key" placeholder="YouTube Data API key" autocomplete="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-bwignore="true" data-form-type="other" style="flex:1 1 280px;width:auto;font-family:ui-monospace,Consolas,monospace;-webkit-text-security:disc">
+        <button class="btn btn-indigo" id="yt-save">Save key</button>
+        <button class="btn btn-soft" id="yt-clear">Clear</button>
+      </div>
+      <div class="small" id="yt-status" style="margin-top:8px"></div>
+      </div>
+    </div>
+    <div class="section cc-sec" id="yta-connection">
+      <div class="cc-head" role="button" tabindex="0" aria-expanded="false" aria-controls="yta-connection-body"><h3 style="display:flex;align-items:center;gap:8px"><span class="ico" data-icon="ytmusic"></span>YouTube account (playlist export)</h3><span class="cc-chip" hidden></span><svg class="cc-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></div>
+      <div class="cc-body" id="yta-connection-body" hidden>
+      <p>Paste the OAuth Client ID from your Google Cloud project once; it is not a secret and is saved in this browser. Sign-in uses Google's own pop-up (no client secret), asks to manage your YouTube account so the app can create private playlists, and lasts about an hour in this tab. Works only while Google Advanced Protection is off; because the app is in Testing mode, Google asks you to re-approve about once a week.</p>
+      <div class="row">
+        <input type="text" id="yta-client-id" placeholder="Google OAuth Client ID (…apps.googleusercontent.com)" autocomplete="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-bwignore="true" style="flex:1 1 280px;width:auto;font-family:ui-monospace,Consolas,monospace">
+        <button class="btn btn-indigo" id="yta-connect"><span class="ico" data-icon="ytmusic"></span>Connect YouTube</button>
+      </div>
+      <div class="small" id="yta-status" style="margin-top:8px"></div>
+      </div>
+    </div>
+    <div class="section cc-sec" id="sync-connection">
+      <div class="cc-head" role="button" tabindex="0" aria-expanded="false" aria-controls="sync-connection-body"><h3 style="display:flex;align-items:center;gap:8px"><span class="ico" data-icon="radio"></span>Sync between devices</h3><span class="cc-chip" hidden></span><svg class="cc-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></div>
+      <div class="cc-body" id="sync-connection-body" hidden>
+      <p>Keeps your library, playlists and selection the same on your computer and phone, through your own Cloudflare Worker (it uses the AI relay address and token below, so set those up first on each device). The YouTube API key, the relay token, the Worker address and all sign-ins stay on each device and are never synced. The last 5 synced copies are kept, so a change can be undone.</p>
+      <div class="row">
+        <label class="small muted" style="display:flex;align-items:center;gap:8px">This device's name <input type="text" id="sync-device" maxlength="30" style="width:150px"></label>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <button class="btn btn-indigo" id="sync-toggle">Turn on sync</button>
+        <button class="btn btn-outline" id="sync-now">Sync now</button>
+        <button class="btn btn-outline" id="sync-history">Saved copies</button>
+        <button class="btn btn-soft" id="sync-undo" hidden>Undo last replace</button>
+      </div>
+      <div class="small" id="sync-status" style="margin-top:8px"></div>
+      <div class="sync-copies" id="sync-copies"></div>
+      </div>
+    </div>
+    <div class="section cc-sec" id="ai-connection">
+      <div class="cc-head" role="button" tabindex="0" aria-expanded="false" aria-controls="ai-connection-body"><h3 style="display:flex;align-items:center;gap:8px"><span class="ico" data-icon="sparkles" style="color:var(--amber)"></span>AI relay (playlist builder)</h3><span class="cc-chip" hidden></span><svg class="cc-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></div>
+      <div class="cc-body" id="ai-connection-body" hidden>
+      <p>The AI Playlist Builder talks to your own Cloudflare Worker, which holds the Ollama key. Paste the Worker address and the app token once. Both are saved in this browser only; the token is never included in backups or written into the app file.</p>
+      <div class="row">
+        <input type="text" id="ai-url" placeholder="Worker address (https://…workers.dev)" autocomplete="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-bwignore="true" data-form-type="other" style="flex:1 1 280px;width:auto;font-family:ui-monospace,Consolas,monospace">
+      </div>
+      <div class="row" style="margin-top:8px">
+        <input type="text" id="ai-token" placeholder="App token" autocomplete="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-bwignore="true" data-form-type="other" style="flex:1 1 280px;width:auto;font-family:ui-monospace,Consolas,monospace;-webkit-text-security:disc">
+        <button class="btn btn-indigo" id="ai-save">Save</button>
+        <button class="btn btn-soft" id="ai-forget">Clear</button>
+      </div>
+      <div class="small" id="ai-conn-status" style="margin-top:8px"></div>
+      </div>
+    </div>
+    <div class="cc-group">Backup &amp; restore</div>
+    <div class="section cc-sec" id="backup-data">
+      <div class="cc-head" role="button" tabindex="0" aria-expanded="false" aria-controls="backup-data-body"><h3>Backup &amp; restore</h3><span class="cc-chip" hidden></span><svg class="cc-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></div>
+      <div class="cc-body" id="backup-data-body" hidden>
       <p>Your library lives in this browser only; your phone and computer each keep their own copy. Download a backup to save it, and restore it on another device.</p>
       <div class="row">
         <button class="btn btn-outline" id="btn-backup"><span class="ico" data-icon="download"></span>Download backup</button>
         <label class="btn btn-outline"><span class="ico" data-icon="upload"></span>Restore from backup<input type="file" id="restore-file" accept=".json,application/json" hidden></label>
         <button class="btn btn-soft" id="btn-wipe" style="color:var(--danger)">Clear entire library…</button>
+      </div>
       </div>
     </div>
   </div>
@@ -1131,6 +1178,7 @@ const ICON = {
   trash: S('<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>'),
   checkCircle: S('<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>'),
   searchSmall: S('<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>'),
+  gear: S('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>'),
   upload: S('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/>'),
   download: S('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/>'),
   wand: S('<path d="m3 21 9-9"/><path d="M15 4V2"/><path d="M15 16v-2"/><path d="M8 9h2"/><path d="M20 9h2"/><path d="M17.8 11.8 19 13"/><path d="M17.8 6.2 19 5"/><path d="M12.2 6.2 11 5"/>'),
@@ -2210,7 +2258,7 @@ $('#form-spotify').addEventListener('input', (e) => {
   $('#form-status').value = isDirectSpotify(e.target.value) ? VERIFIED : SEARCH;
 });
 
-const openImport = () => $('#import-modal').classList.add('open');
+const openImport = () => { $('#import-modal').classList.add('open'); ccOnOpen(); };
 const closeImport = () => $('#import-modal').classList.remove('open');
 $('#btn-import').addEventListener('click', openImport);
 $('#import-close').addEventListener('click', closeImport);
@@ -2352,7 +2400,7 @@ async function spHandleRedirect() {
 
 async function spApi(path, opts = {}, attempt = 0) {
   const tok = spGetToken();
-  if (!tok) throw new Error('Not connected to Spotify. Open Import → Spotify connection and click Connect.');
+  if (!tok) throw new Error('Not connected to Spotify. Open Imports, Connections, etc. → Spotify connection and click Connect.');
   const headers = { Authorization: 'Bearer ' + tok.accessToken };
   if (opts.body) headers['Content-Type'] = 'application/json';
   const res = await fetch(path.startsWith('http') ? path : 'https://api.spotify.com/v1' + path, Object.assign({}, opts, { headers }));
@@ -2992,6 +3040,7 @@ function openConnections() {
   renderYtStatus();
   renderYtaStatus();
   openImport();
+  ccOpenSection('connections');
   setTimeout(() => $('#connections').scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
 }
 
@@ -3349,7 +3398,7 @@ function ytHandleClick(btn) {
   if (btn.id === 'yt-run') { ytRun(); return; }
   if (btn.id === 'yt-resume') { ytRun(db.youtubeReview.remaining.slice()); return; }
   if (btn.id === 'yt-cancel') { ytState.cancel = true; return; }
-  if (btn.id === 'yt-connect') { $('#resolve-modal').classList.remove('open'); openConnections(); setTimeout(() => $('#yt-connection').scrollIntoView({ block: 'start' }), 120); return; }
+  if (btn.id === 'yt-connect') { $('#resolve-modal').classList.remove('open'); openConnections(); ccOpenSection('yt-connection'); setTimeout(() => $('#yt-connection').scrollIntoView({ block: 'start' }), 120); return; }
   const holder = btn.closest('[data-track]');
   const act = btn.dataset.yt;
   if (!holder || !act || !db.youtubeReview) return;
@@ -3748,7 +3797,7 @@ async function aiFetchUsage(force) {
 
 function aiErrorText(status, d) {
   if (status === 429) return 'Daily limit reached on the relay (' + (d.limit || '') + ' runs). It resets at midnight UTC.';
-  if (status === 401) return 'The relay refused the app token. Check it in Import, Connections & Data.';
+  if (status === 401) return 'The relay refused the app token. Check it in Imports, Connections, etc.';
   if (status === 403) return 'The relay does not accept requests from this page\'s address.';
   return d.error || ('The relay answered HTTP ' + status + '.');
 }
@@ -4847,7 +4896,7 @@ function renderOotbPreview() {
     '<div class="ootb-meter" aria-hidden="true"><span class="' + (over ? 'over' : '') + '" style="width:' + pct + '%"></span></div>' +
     (over ? '<div class="ootb-warn">Too large to sync. Choose a shorter date range.</div>' : '') +
     '<label class="small" style="display:flex;align-items:center;gap:8px;margin:8px 0"><input type="checkbox" id="ootb-backup" checked> Download a backup first</label>' +
-    '<div class="row"><button class="btn btn-indigo" id="ootb-import-go"' + (extra.shows.length && !over ? '' : ' disabled') + '>' + (extra.shows.length ? 'Import ' + extra.shows.length + ' show' + (extra.shows.length === 1 ? '' : 's') + ' (' + extra.tracks.length + ' tracks)' : 'Nothing new to import') + '</button></div>';
+    '<div class="row"><button class="btn btn-indigo" id="ootb-import-go"' + (extra.shows.length && !over ? '' : ' disabled') + '>' + (extra.shows.length ? 'Import ' + extra.shows.length + ' show' + (extra.shows.length === 1 ? '' : 's') + ' (' + extra.tracks.length + ' tracks)' : 'Nothing new to import') + '</button><button class="btn btn-soft" id="ootb-clear">Clear preview</button></div>';
 }
 
 async function ootbImport() {
@@ -5179,7 +5228,7 @@ function renderHrPreview() {
     (over ? '<div class="ootb-warn">Too large to sync. Choose fewer hours.</div>' : '') +
     '<label class="small" style="display:flex;align-items:center;gap:8px;margin:8px 0"><input type="checkbox" id="hr-backup" checked> Download a backup first</label>' +
     '<div class="row"><button class="btn btn-indigo" id="hr-import-go"' + (extra.shows.length && !over ? '' : ' disabled') + '>' +
-    (extra.shows.length ? 'Import ' + extra.shows.length + ' hour' + (extra.shows.length === 1 ? '' : 's') + ' (' + extra.tracks.length + ' tracks)' : 'Nothing new to import') + '</button></div>';
+    (extra.shows.length ? 'Import ' + extra.shows.length + ' hour' + (extra.shows.length === 1 ? '' : 's') + ' (' + extra.tracks.length + ' tracks)' : 'Nothing new to import') + '</button><button class="btn btn-soft" id="hr-clear">Clear preview</button></div>';
 }
 
 function hrImport() {
@@ -5224,6 +5273,103 @@ $('#hr-n').addEventListener('input', () => { document.querySelector('input[name=
 $('#btn-import').addEventListener('click', () => { hrSetDefaults(); hrRenderStation(); });
 $('#hr-station').addEventListener('click', (e) => { const b = e.target.closest('[data-station]'); if (b) hrSwitchStation(b.dataset.station); });
 hrSetDefaults();
+
+/* =========================================================
+   Imports, Connections, etc.: collapsible sections
+   Each section opens and closes on its own; the open ones are remembered on this
+   device only (never synced). A section with work in progress or a preview waiting
+   opens itself and cannot be collapsed until that work is done or cleared.
+   Closed headings show status words only, never a key, token, ID or address.
+   ========================================================= */
+const CC_KEY = STORE_KEY + '.ccOpen';
+const ccSections = () => [...document.querySelectorAll('#import-modal .cc-sec')];
+let ccTimer = null;
+
+function ccSaved() { try { return JSON.parse(localStorage.getItem(CC_KEY) || '[]'); } catch (e) { return []; } }
+function ccRemember() {
+  try { localStorage.setItem(CC_KEY, JSON.stringify(ccSections().filter((s) => s.classList.contains('open')).map((s) => s.id))); } catch (e) { /* storage unavailable */ }
+}
+function ccSet(sec, open) {
+  sec.classList.toggle('open', open);
+  sec.querySelector('.cc-head').setAttribute('aria-expanded', open ? 'true' : 'false');
+  sec.querySelector('.cc-body').hidden = !open;
+}
+// Work in progress or a preview waiting to be imported or cleared.
+function ccBusy(id) {
+  if (id === 'csv-import') return pendingImport ? 'Preview ready' : '';
+  if (id === 'ootb-import') return ootbRun ? 'Working…' : ootbFound.length ? 'Preview ready' : '';
+  if (id === 'hourly-import') return hrRun ? 'Working…' : hrFound.length ? 'Preview ready' : '';
+  return '';
+}
+// Status words for a closed heading.
+function ccChip(id) {
+  const busy = ccBusy(id);
+  if (busy) return busy;
+  const undo = (typeof ootbUndoInfo === 'function') && ootbUndoInfo();
+  const undoHere = undo && db.tracks.some((t) => undo.trackIds.includes(t.id)) && ((undo.label || OOTB) === OOTB ? 'ootb-import' : 'hourly-import');
+  switch (id) {
+    case 'ootb-import': case 'hourly-import': return undoHere === id ? 'Undo available' : '';
+    case 'connections': return spGetToken() ? 'Connected' : db.settings.spotifyClientId ? 'Not connected' : 'Not set up';
+    case 'yt-connection': return db.settings.youtubeApiKey ? 'Key saved · ' + ytSearchesLeft() + ' left today' : 'No key saved';
+    case 'yta-connection': return ytaGetToken() ? 'Connected' : 'Not connected';
+    case 'sync-connection': return syncState && syncState.on ? 'On · version ' + syncState.base : 'Off on this device';
+    case 'ai-connection': return aiConfigured() ? 'Set up' : 'Not set up';
+    default: return '';
+  }
+}
+function ccRefresh() {
+  ccSections().forEach((s) => {
+    const busy = ccBusy(s.id);
+    if (busy && !s.classList.contains('open')) ccSet(s, true);
+    s.classList.toggle('locked', !!busy);
+    const chip = s.querySelector('.cc-chip'), text = ccChip(s.id);
+    if (chip.textContent !== text) chip.textContent = text;
+    chip.hidden = !text;
+    chip.classList.toggle('busy', !!busy);
+  });
+  const all = ccSections(), allOpen = all.every((s) => s.classList.contains('open'));
+  $('#cc-all').textContent = allOpen ? 'Collapse all' : 'Expand all';
+}
+function ccToggle(sec) {
+  if (sec.classList.contains('open') && ccBusy(sec.id)) { toast('This section stays open while work is in progress or a preview is waiting.'); return; }
+  ccSet(sec, !sec.classList.contains('open'));
+  ccRemember();
+  ccRefresh();
+}
+// Used by buttons elsewhere that jump to a section ("Connect Spotify first", "Add your API key first").
+function ccOpenSection(id) {
+  const s = document.getElementById(id);
+  if (s && s.classList.contains('cc-sec') && !s.classList.contains('open')) { ccSet(s, true); ccRemember(); }
+  ccRefresh();
+}
+function ccOnOpen() {
+  requestAnimationFrame(() => { const top = $('#import-modal .cc-top'); if (top) $('#import-modal .modal').style.setProperty('--cc-top-h', Math.ceil(top.getBoundingClientRect().height + 8) + 'px'); });
+  const saved = new Set(ccSaved());
+  ccSections().forEach((s) => ccSet(s, saved.has(s.id)));
+  ccRefresh();
+  clearInterval(ccTimer);
+  ccTimer = setInterval(() => { if ($('#import-modal').classList.contains('open')) ccRefresh(); else { clearInterval(ccTimer); ccTimer = null; } }, 700);
+}
+
+$('#import-modal').addEventListener('click', (e) => {
+  const head = e.target.closest('.cc-head');
+  if (head) { ccToggle(head.closest('.cc-sec')); return; }
+  if (e.target.id === 'cc-all') {
+    const open = e.target.textContent === 'Expand all';
+    ccSections().forEach((s) => { if (open || !ccBusy(s.id)) ccSet(s, open); });
+    ccRemember();
+    ccRefresh();
+  }
+});
+$('#import-modal').addEventListener('keydown', (e) => {
+  const head = e.target.closest && e.target.closest('.cc-head');
+  if (head && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); ccToggle(head.closest('.cc-sec')); }
+});
+// Update the chips the moment a check starts or a CSV preview appears, not on the next timer tick.
+['#ootb-check', '#hr-check'].forEach((sel) => $(sel).addEventListener('click', () => setTimeout(ccRefresh, 0)));
+$('#csv-files').addEventListener('change', () => setTimeout(ccRefresh, 400));
+$('#ootb-preview').addEventListener('click', (e) => { if (e.target.id === 'ootb-clear') { ootbFound = []; $('#ootb-preview').innerHTML = ''; $('#ootb-progress').hidden = true; ccRefresh(); } });
+$('#hr-preview').addEventListener('click', (e) => { if (e.target.id === 'hr-clear') { hrFound = []; $('#hr-preview').innerHTML = ''; $('#hr-progress').hidden = true; ccRefresh(); } });
 
 // Resource-row logos reuse the header's embedded images.
 document.querySelectorAll('img[data-logo-from]').forEach((img) => { const src = document.querySelector(img.dataset.logoFrom); if (src) img.src = src.src; });
