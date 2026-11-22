@@ -300,6 +300,20 @@
   .ootb-meter { height: 10px; border-radius: 999px; background: var(--pill); overflow: hidden; margin: 6px 0; }
   .ootb-meter span { display: block; height: 100%; background: var(--indigo); }
   .ootb-meter span.over { background: var(--danger); }
+  /* Resolve links: scope picker and run bar */
+  .rs-scope { border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin: 10px 0 6px; background: #fbfcfe; }
+  .rs-grid { display: grid; grid-template-columns: auto 1fr; gap: 8px 14px; align-items: start; font-size: 0.9rem; }
+  .rs-grid > label, .rs-grid > span { font-weight: 700; padding-top: 6px; }
+  .rs-scope select, .rs-scope input[type="date"] { width: auto; padding: 6px 8px; }
+  .rs-shows { max-height: 180px; overflow: auto; border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; margin-top: 8px; display: grid; gap: 4px; font-size: 0.85rem; background: #fff; }
+  .rs-shows label { display: flex; gap: 8px; align-items: center; }
+  .rs-preview { font-size: 0.88rem; margin: 6px 0; line-height: 1.5; }
+  .rs-yt { display: flex; gap: 8px; align-items: flex-start; font-size: 0.88rem; margin: 6px 0; }
+  .rs-yt input { width: 18px; height: 18px; flex: none; margin-top: 2px; accent-color: var(--indigo); }
+  .rs-note { color: #92400e; background: var(--amber-soft); border-radius: 8px; padding: 8px 10px; font-size: 0.85rem; margin: 8px 0; }
+  .rs-run { padding: 8px 0; margin-top: 6px; flex-wrap: wrap; }
+  .rs-run.live { position: sticky; top: -1px; z-index: 2; background: #fff; box-shadow: 0 6px 8px -6px rgba(15, 23, 42, 0.15); }
+  .rs-wait { color: var(--amber); font-size: 0.85rem; font-weight: 700; }
   .ootb-warn { color: #92400e; background: var(--amber-soft); border-radius: 8px; padding: 6px 10px; font-size: 0.82rem; margin: 6px 0; }
   .ai-scope-note { font-size: 0.8rem; color: #92400e; margin-top: 8px; }
   .air { font-size: 0.75rem; color: var(--muted); }
@@ -593,6 +607,9 @@
     .panel-actions .btn { padding: 9px 6px; font-size: 0.82rem; gap: 5px; }
     .brand { flex: 1 1 100%; }
     .review-item .vs { grid-template-columns: 1fr; gap: 8px; }
+    .rs-grid { grid-template-columns: 1fr; gap: 4px; }
+    .rs-grid > label, .rs-grid > span { padding-top: 4px; }
+    .rs-run .btn { width: 100%; justify-content: center; }
     .builder-list li { gap: 6px; }
     .builder-list .n { width: 18px; }
     .icon-btn { width: 28px; height: 28px; font-size: 0.85rem; }
@@ -2283,6 +2300,12 @@ async function spApi(path, opts = {}, attempt = 0) {
   const headers = { Authorization: 'Bearer ' + tok.accessToken };
   if (opts.body) headers['Content-Type'] = 'application/json';
   const res = await fetch(path.startsWith('http') ? path : 'https://api.spotify.com/v1' + path, Object.assign({}, opts, { headers }));
+  if (res.status === 429 && spRateWait) {
+    const secs = parseInt(res.headers.get('Retry-After'), 10) || 2 * (attempt + 1);
+    if (secs > 60 || attempt >= 6) { const err = new Error('Spotify asked the app to wait ' + secs + ' seconds.'); err.status = 429; err.retryAfter = secs; throw err; }
+    await spRateWait(secs);
+    return spApi(path, opts, attempt + 1);
+  }
   if (res.status === 429 && attempt < 4) {
     const wait = (parseInt(res.headers.get('Retry-After'), 10) || 2 * (attempt + 1)) * 1000;
     await sleep(Math.min(wait, 30000));
@@ -2405,57 +2428,11 @@ function spUndo(track) {
 }
 
 /* ---------- Resolve links ---------- */
-let spResolveState = { running: false, cancel: false, index: 0, total: 0, current: '' };
-
 function spQueryClean(s) { return String(s || '').replace(/["']/g, ' ').replace(/\s*\*+\s*$/, '').trim(); }
 
 async function spSearch(q) {
   const data = await spApi('/search?' + new URLSearchParams({ q, type: 'track', limit: '10' }));
   return (data && data.tracks && data.tracks.items) || [];
-}
-
-async function spRunResolve() {
-  if (!spGetToken()) { toast('Connect Spotify first.', 'error'); return; }
-  const list = scopedTracks().filter((t) => t.linkStatus === SEARCH);
-  if (!list.length) { toast('No Search Query tracks in this view.'); return; }
-  const results = [];
-  db.spotifyReview = { runAt: new Date().toISOString(), scope: $('#f-source').value || 'All sources', results };
-  spResolveState = { running: true, cancel: false, index: 0, total: list.length, current: '' };
-  renderResolve();
-  for (let i = 0; i < list.length; i++) {
-    if (spResolveState.cancel) break;
-    const t = list[i];
-    spResolveState.index = i;
-    spResolveState.current = t.song + ' – ' + t.artist;
-    renderResolve();
-    try {
-      let best = spEvaluate(t, await spSearch('track:' + spQueryClean(t.song) + ' artist:' + spQueryClean(t.artist)));
-      if (!best || !best.confident) {
-        await sleep(SP_PAUSE_MS);
-        const b2 = spEvaluate(t, await spSearch(spQueryClean(t.artist) + ' ' + spQueryClean(t.song)));
-        if (b2 && (!best || b2.score > best.score)) best = b2;
-      }
-      if (best && best.confident) {
-        const cand = spCandidate(best.item);
-        spApplyMatch(t, cand, 'auto');
-        results.push({ trackId: t.id, outcome: 'auto', cand, reasons: [] });
-      } else if (best) {
-        results.push({ trackId: t.id, outcome: 'review', cand: spCandidate(best.item), reasons: best.reasons });
-      } else {
-        results.push({ trackId: t.id, outcome: 'none' });
-      }
-    } catch (e) {
-      results.push({ trackId: t.id, outcome: 'error', error: e.message });
-      if (/Not connected|expired/.test(e.message)) break;
-    }
-    saveDb();
-    await sleep(SP_PAUSE_MS);
-  }
-  spResolveState.running = false;
-  spResolveState.index = list.length;
-  saveDb();
-  renderAll();
-  renderResolve();
 }
 
 function trackLine(t) {
@@ -2470,62 +2447,318 @@ function renderResolve() {
   if (resolveMode === 'youtube') renderResolveYouTube(); else renderResolveSpotify();
 }
 
+/* ---------- Scope (shared by the Spotify and YouTube tabs) ---------- */
+// Starts from Song Explorer's Source and Show Date filters each time the window opens.
+let rsScope = { source: '', dates: 'all', from: '', to: '', shows: [] };
+function rsShowKey(s) { return s.source + '|' + s.showDate + '|' + (s.airTime || ''); }
+function rsScopeFromFilters() {
+  const date = $('#f-date').value;
+  rsScope = { source: $('#f-source').value || '', dates: date ? 'range' : 'all', from: date || '', to: date || '', shows: [] };
+}
+function rsTrackInShow(t, s) { return t.source === s.source && t.showDate === s.showDate && (!s.airTime || !t.airTime || t.airTime === s.airTime); }
+function rsScopeShows() {
+  return db.shows.filter((s) => !rsScope.source || s.source === rsScope.source).slice()
+    .sort((a, b) => String(b.showDate).localeCompare(String(a.showDate)) || String(a.source).localeCompare(String(b.source)));
+}
+function rsScopeTracks() {
+  let list = rsScope.source ? db.tracks.filter((t) => t.source === rsScope.source) : db.tracks;
+  if (rsScope.dates === 'range') list = list.filter((t) => (!rsScope.from || t.showDate >= rsScope.from) && (!rsScope.to || t.showDate <= rsScope.to));
+  if (rsScope.dates === 'shows') {
+    const picked = db.shows.filter((s) => rsScope.shows.includes(rsShowKey(s)));
+    list = list.filter((t) => picked.some((s) => rsTrackInShow(t, s)));
+  }
+  return list;
+}
+function rsScopeLabel() {
+  const src = rsScope.source || 'All sources';
+  if (rsScope.dates === 'range') {
+    const f = rsScope.from, to = rsScope.to;
+    return src + ' · ' + (f && f === to ? labelFromIso(f) : (f ? labelFromIso(f) : 'earliest') + ' to ' + (to ? labelFromIso(to) : 'latest'));
+  }
+  if (rsScope.dates === 'shows') return src + ' · ' + rsScope.shows.length + ' show' + (rsScope.shows.length === 1 ? '' : 's');
+  return src + ' · all dates';
+}
+function rsBusy() { return spBulk.running || ytState.running; }
+function rsScopeHtml() {
+  const dis = rsBusy() ? ' disabled' : '';
+  const srcCount = (s) => db.tracks.filter((t) => t.source === s).length;
+  let html = '<div class="rs-scope"><div class="rs-grid">' +
+    '<label for="rs-source">Source</label><select id="rs-source"' + dis + '><option value="">All sources (' + db.tracks.length + ')</option>' +
+    SOURCES.filter(srcCount).map((s) => '<option value="' + escapeHtml(s) + '"' + (s === rsScope.source ? ' selected' : '') + '>' + escapeHtml(s) + ' (' + srcCount(s) + ')</option>').join('') +
+    '</select><span>Dates</span><div class="ootb-modes" style="margin:0">' +
+    '<label><input type="radio" name="rs-dates" value="all"' + (rsScope.dates === 'all' ? ' checked' : '') + dis + '> All dates</label>' +
+    '<label><input type="radio" name="rs-dates" value="range"' + (rsScope.dates === 'range' ? ' checked' : '') + dis + '> From <input type="date" id="rs-from" value="' + escapeHtml(rsScope.from) + '"' + dis + '> to <input type="date" id="rs-to" value="' + escapeHtml(rsScope.to) + '"' + dis + '></label>' +
+    '<label><input type="radio" name="rs-dates" value="shows"' + (rsScope.dates === 'shows' ? ' checked' : '') + dis + '> Pick shows</label></div></div>';
+  if (rsScope.dates === 'shows') {
+    const shows = rsScopeShows();
+    html += '<div class="rs-shows">' + (shows.length ? shows.map((s) => {
+      const key = rsShowKey(s);
+      const n = db.tracks.filter((t) => rsTrackInShow(t, s)).length;
+      return '<label><input type="checkbox" class="rs-show" value="' + escapeHtml(key) + '"' + (rsScope.shows.includes(key) ? ' checked' : '') + dis + '> ' +
+        escapeHtml((s.showLabel || labelFromIso(s.showDate)) + (s.airTime ? ' · ' + s.airTime : '') + ' · ' + s.source + ' · ' + n + ' tracks') + '</label>';
+    }).join('') : '<span class="muted">No shows for this source.</span>') + '</div>';
+  }
+  return html + '</div>';
+}
+
+/* ---------- Bulk Spotify run ---------- */
+// One search per unique artist + song (apostrophes ignored); a song that already has a verified
+// Spotify link somewhere in the library reuses it without a search. Only tracks still marked
+// Search Query are touched, and each one is checked again right before it is saved.
+let spBulk = { running: false, cancel: false, done: 0, total: 0, current: '', wait: 0, stopReason: '', waitSecs: 0 };
+let spRateWait = null;
+let rsWithYt = false;
+const SP_BYTES_PER_MATCH = 330, SP_BYTES_PER_ROW = 120;
+
+function spKey(artist, song) { return norm(String(artist || '').replace(/['’`]/g, '')) + '|' + norm(String(song || '').replace(/['’`]/g, '')); }
+function spVerifiedMap() {
+  const m = new Map();
+  db.tracks.forEach((t) => { if (spTrackId(t)) { const k = spKey(t.artist, t.song); if (!m.has(k)) m.set(k, t); } });
+  return m;
+}
+function spGroup(tracks) {
+  const g = new Map();
+  tracks.forEach((t) => { const k = spKey(t.artist, t.song); if (!g.has(k)) g.set(k, []); g.get(k).push(t); });
+  return g;
+}
+function spPlan() {
+  const scope = rsScopeTracks();
+  const pending = scope.filter((t) => t.linkStatus === SEARCH);
+  const verified = spVerifiedMap();
+  const groups = spGroup(pending);
+  let reuse = 0, searches = 0;
+  groups.forEach((ts, k) => { if (verified.has(k)) reuse += ts.length; else searches++; });
+  return { scope, pending, direct: scope.length - pending.length, groups, reuse, searches };
+}
+function spReusedCand(src) {
+  const id = spTrackId(src);
+  return { id, url: 'https://open.spotify.com/track/' + id, name: src.song, artists: src.artist, album: src.album || '', year: '', from: src.id };
+}
+function spStillPending(ids) { return ids.map(trackById).filter((t) => t && t.linkStatus === SEARCH); }
+
+async function spRateWaitUi(secs) {
+  for (let s = secs; s > 0; s--) {
+    if (spBulk.cancel) { const e = new Error('Stopped by you.'); e.stopped = true; throw e; }
+    spBulk.wait = s;
+    renderResolve();
+    await sleep(1000);
+  }
+  spBulk.wait = 0;
+}
+
+async function spRunBulk(resumeIds) {
+  if (!spGetToken()) { toast('Connect Spotify first.', 'error'); return; }
+  const verified = spVerifiedMap();
+  let pending;
+  if (resumeIds && db.spotifyReview) {
+    pending = spStillPending(resumeIds);
+  } else {
+    pending = spPlan().pending;
+    db.spotifyReview = { bulk: true, runId: 'r' + Date.now().toString(36), runAt: new Date().toISOString(), scope: rsScopeLabel(),
+      counts: { auto: 0, reused: 0, already: 0 }, results: [], remaining: [], withYouTube: rsWithYt };
+  }
+  const rv = db.spotifyReview;
+  rv.counts = rv.counts || { auto: 0, reused: 0, already: 0 };
+  if (!pending.length) { toast('No Search Query tracks in this scope.'); return; }
+  rv.remaining = pending.map((t) => t.id);
+  rv.stopReason = '';
+  const groups = spGroup(pending);
+  const markDone = (ids) => { const s = new Set(ids); rv.remaining = rv.remaining.filter((x) => !s.has(x)); };
+  const applyTo = (ids, cand, method) => {
+    const ok = spStillPending(ids); // re-checked right before saving
+    rv.counts.already += ids.length - ok.length;
+    ok.forEach((t) => {
+      spApplyMatch(t, cand, method);
+      t.spotifyResolved.runId = rv.runId;
+      rv.counts[method === 'reused' ? 'reused' : 'auto']++;
+    });
+  };
+  syncHold(true);
+  spBulk = { running: true, cancel: false, done: 0, total: groups.size, current: '', wait: 0, stopReason: '' };
+  spRateWait = spRateWaitUi;
+  renderResolve();
+  try {
+    // 1. Songs that already have a verified link elsewhere in the library: no search needed.
+    for (const [k, ts] of groups) {
+      if (!verified.has(k)) continue;
+      const ids = ts.map((t) => t.id);
+      applyTo(ids, spReusedCand(verified.get(k)), 'reused');
+      markDone(ids);
+      groups.delete(k);
+      spBulk.done++;
+    }
+    saveDb();
+    // 2. One Spotify search per remaining unique song.
+    for (const [, ts] of groups) {
+      if (spBulk.cancel) { spBulk.stopReason = 'stopped'; break; }
+      if (!spGetToken()) { spBulk.stopReason = 'signin'; break; }
+      const t = ts[0];
+      const ids = ts.map((x) => x.id);
+      spBulk.current = t.song + ' – ' + t.artist + (ts.length > 1 ? ' (' + ts.length + ' plays)' : '');
+      renderResolve();
+      try {
+        let best = spEvaluate(t, await spSearch('track:' + spQueryClean(t.song) + ' artist:' + spQueryClean(t.artist)));
+        if (!best || !best.confident) {
+          await sleep(SP_PAUSE_MS);
+          const b2 = spEvaluate(t, await spSearch(spQueryClean(t.artist) + ' ' + spQueryClean(t.song)));
+          if (b2 && (!best || b2.score > best.score)) best = b2;
+        }
+        let swapped = null;
+        if (!best) {
+          // Nothing at all: the playlist may list artist and song the other way round. Review only.
+          await sleep(SP_PAUSE_MS);
+          const r = spEvaluate({ artist: t.song, song: t.artist, type: t.type }, await spSearch('track:' + spQueryClean(t.artist) + ' artist:' + spQueryClean(t.song)));
+          if (r) swapped = r;
+        }
+        if (best && best.confident) {
+          applyTo(ids, spCandidate(best.item), 'auto');
+        } else if (best) {
+          rv.results.push({ trackId: t.id, alsoIds: ids.slice(1), outcome: 'review', cand: spCandidate(best.item), reasons: best.reasons });
+        } else if (swapped) {
+          rv.results.push({ trackId: t.id, alsoIds: ids.slice(1), outcome: 'review', cand: spCandidate(swapped.item),
+            reasons: ['artist and song may be swapped in the playlist'].concat(swapped.reasons) });
+        } else {
+          rv.results.push({ trackId: t.id, alsoIds: ids.slice(1), outcome: 'none' });
+        }
+        markDone(ids);
+      } catch (e) {
+        if (e.stopped) { spBulk.stopReason = 'stopped'; break; }
+        if (e.status === 429) { spBulk.stopReason = 'ratelimit'; spBulk.waitSecs = e.retryAfter || 0; break; }
+        if (/Not connected|expired/.test(e.message)) { spBulk.stopReason = 'signin'; break; }
+        rv.results.push({ trackId: t.id, alsoIds: ids.slice(1), outcome: 'error', error: e.message });
+        markDone(ids);
+      }
+      spBulk.done++;
+      saveDb();
+      await sleep(SP_PAUSE_MS);
+    }
+  } finally {
+    spRateWait = null;
+    spBulk.running = false;
+    rv.stopReason = spBulk.stopReason;
+    saveDb();
+    syncHold(false);
+    renderAll();
+    renderResolve();
+  }
+  if (!spBulk.stopReason && rv.withYouTube && db.settings.youtubeApiKey && ytScopeTracks().length) {
+    resolveMode = 'youtube';
+    ytRun();
+  }
+}
+
+function spUndoRun() {
+  const rv = db.spotifyReview;
+  if (!rv || !rv.runId) return;
+  const list = db.tracks.filter((t) => t.spotifyResolved && t.spotifyResolved.runId === rv.runId && t.spotifyResolved.method !== 'approved');
+  if (!list.length) return;
+  if (!confirm('Undo ' + list.length + ' automatic Spotify match' + (list.length === 1 ? '' : 'es') + ' from this run? Those tracks go back to search links.')) return;
+  list.forEach(spUndo);
+  rv.counts.auto = 0; rv.counts.reused = 0;
+  rv.undone = (rv.undone || 0) + list.length;
+  saveDb();
+  renderAll();
+  renderResolve();
+}
+
 function renderResolveSpotify() {
   const body = $('#resolve-body');
   const connected = !!spGetToken();
-  const pending = scopedTracks().filter((t) => t.linkStatus === SEARCH).length;
-  const st = spResolveState;
-  let html = '<p>Searches Spotify for every track in the current view still marked <b>Search Query</b>. Exact artist + title matches are saved automatically ' +
-    '(a live-session track gets the studio version, noted as "studio version"). Anything uncertain (live versions, remasters, partial artist or title matches) waits for your approval. ' +
-    'Verified links are never touched, and every change can be undone.</p>';
-  html += '<div class="row" style="margin-top:12px">' +
+  const st = spBulk;
+  const plan = spPlan();
+  const rv = db.spotifyReview;
+  const remaining = rv && rv.remaining ? spStillPending(rv.remaining) : [];
+  let html = '<p>Searches Spotify for tracks in the scope below that still have only a search link. Exact artist + title matches are saved; ' +
+    'anything uncertain (live versions, remasters, partial matches, or artist and song that look swapped) waits for your approval. ' +
+    'Tracks with no match keep their search link; nothing is guessed. Direct links that are already set are never changed, and every change can be undone.</p>';
+  html += rsScopeHtml();
+  const nowBytes = librarySizeWith({ tracks: [], shows: [] });
+  const addBytes = plan.pending.length * SP_BYTES_PER_MATCH + plan.searches * SP_BYTES_PER_ROW;
+  html += '<div class="rs-preview"><b>' + plan.pending.length + '</b> track' + (plan.pending.length === 1 ? '' : 's') + ' still have search links in this scope' +
+    (plan.pending.length ? ' (' + plan.groups.size + ' unique song' + (plan.groups.size === 1 ? '' : 's') + ')' : '') + '. ' +
+    '<b>' + plan.direct + '</b> already have direct links and will not be touched.' +
+    (plan.pending.length ? '<br>' + (plan.reuse ? plan.reuse + ' can reuse a verified link already in your library (no search). ' : '') +
+      plan.searches + ' Spotify search' + (plan.searches === 1 ? '' : 'es') + ', about ' + Math.max(1, Math.ceil(plan.searches * 1.1 / 60)) + ' min.' +
+      '<br>Library size: ' + mb(nowBytes) + ' now, up to ' + mb(nowBytes + addBytes) + ' after (sync limit ' + mb(SYNC_SIZE_LIMIT) + ').' : '') + '</div>';
+  if (plan.pending.length && nowBytes + addBytes > SYNC_SIZE_LIMIT) {
+    html += '<div class="ootb-warn">This run could take the library past the sync limit. Choose a smaller scope.</div>';
+  }
+  const ytLeft = ytSearchesLeft();
+  html += '<label class="rs-yt"><input type="checkbox" id="rs-yt"' + (rsWithYt ? ' checked' : '') + (db.settings.youtubeApiKey && !rsBusy() ? '' : ' disabled') + '><span>' +
+    'Also search YouTube afterwards (~' + ytLeft + ' searches left today; stops before the daily limit)' +
+    (db.settings.youtubeApiKey ? '' : ' <span class="muted">· add your YouTube key on this device to use this</span>') + '</span></label>';
+  if (!connected) {
+    html += '<div class="rs-note">Spotify searches need you to sign in to Spotify in this browser. Nothing runs while signed out.</div>';
+  }
+  html += '<div class="rs-run row' + (st.running ? ' live' : '') + '">' +
     (st.running
       ? '<button class="btn btn-soft" id="rs-cancel">Stop</button>'
-      : '<button class="btn btn-indigo" id="rs-run"' + (connected && pending ? '' : ' disabled') + '>' + icon('wand') + 'Run on ' + pending + ' Search Query track' + (pending === 1 ? '' : 's') + '</button>') +
-    (connected ? '' : '<button class="btn btn-outline" id="rs-connect">' + icon('spotify') + 'Connect Spotify first</button>') +
-    '<span class="muted small">Scope: ' + escapeHtml($('#f-source').value || 'All sources') + '</span></div>';
+      : (connected
+          ? '<button class="btn btn-indigo" id="rs-run"' + (plan.pending.length ? '' : ' disabled') + '>' + icon('wand') + 'Resolve all on Spotify (' + plan.pending.length + ')</button>' +
+            (remaining.length ? '<button class="btn btn-outline" id="rs-resume">Resume ' + remaining.length + ' remaining</button>' : '')
+          : '<button class="btn btn-outline" id="rs-connect">' + icon('spotify') + 'Connect Spotify to run</button>')) +
+    '<span class="muted small">Scope: ' + escapeHtml(rsScopeLabel()) + '</span>';
   if (st.running) {
-    html += '<div class="progress"><i style="width:' + Math.round(100 * st.index / Math.max(1, st.total)) + '%"></i></div>' +
-      '<div class="small muted">' + (st.index + 1) + ' of ' + st.total + ': ' + escapeHtml(st.current) + '</div>';
+    html += '<div class="progress" style="flex-basis:100%"><i style="width:' + Math.round(100 * st.done / Math.max(1, st.total)) + '%"></i></div>' +
+      '<div class="small muted" style="flex-basis:100%">' + Math.min(st.done + 1, st.total) + ' of ' + st.total + ' songs: ' + escapeHtml(st.current) + '</div>' +
+      (st.wait ? '<div class="rs-wait" style="flex-basis:100%">Spotify asked us to slow down, resuming in ' + st.wait + ' s</div>' : '');
   }
-  const rv = db.spotifyReview;
-  if (rv && rv.results && rv.results.length) {
+  html += '</div>';
+  const reason = !st.running && rv && rv.stopReason;
+  if (reason) {
+    const left = remaining.length + ' track' + (remaining.length === 1 ? '' : 's') + ' remain';
+    html += '<div class="report" style="margin-top:10px">' + (
+      reason === 'signin' ? '<b class="warn">Spotify sign-in expired.</b> Progress is saved; ' + left + '. Connect again, then press Resume.'
+      : reason === 'ratelimit' ? '<b class="warn">Spotify asked the app to wait ' + (st.waitSecs ? st.waitSecs + ' seconds' : 'more than a minute') + '.</b> Progress is saved; ' + left + '. Press Resume in a few minutes.'
+      : 'Stopped by you. Progress is saved; ' + left + '. Press Resume to continue.') + '</div>';
+  }
+  if (rv && rv.results) {
     const rows = rv.results.map((r) => Object.assign({ t: trackById(r.trackId) }, r)).filter((r) => r.t);
     const by = (o) => rows.filter((r) => r.outcome === o);
+    const plays = (list) => list.reduce((n, r) => n + 1 + (r.alsoIds ? r.alsoIds.length : 0), 0);
     const auto = by('auto'), approved = by('approved'), review = by('review'), skipped = by('skipped'), none = by('none'), errors = by('error');
-    html += '<div class="chips">' +
-      '<span class="stat green">' + (auto.length + approved.length) + ' resolved</span>' +
-      '<span class="stat" style="background:var(--amber-soft);color:var(--amber)">' + review.length + ' need review</span>' +
-      '<span class="stat">' + none.length + ' unmatched</span>' +
-      (skipped.length ? '<span class="stat">' + skipped.length + ' skipped</span>' : '') +
-      (errors.length ? '<span class="stat" style="background:#fef2f2;color:var(--danger)">' + errors.length + ' errors</span>' : '') +
-      '<span class="muted small" style="align-self:center">Run ' + escapeHtml(new Date(rv.runAt).toLocaleString()) + ' · ' + escapeHtml(rv.scope || '') + '</span></div>';
-
-    const candHtml = (c) => '<b>' + escapeHtml(c.name) + '</b> · ' + escapeHtml(c.artists) +
-      '<br><span class="muted small">' + escapeHtml(c.album) + (c.year ? ' (' + escapeHtml(c.year) + ')' : '') + '</span>' +
-      ' <a class="small" href="' + escapeHtml(c.url) + '" target="_blank" rel="noopener noreferrer">Open in Spotify ↗</a>';
-
+    const c = rv.counts || {};
+    const resolvedN = (c.auto || 0) + (c.reused || 0) + plays(auto) + plays(approved);
+    if (rows.length || resolvedN || rv.undone) {
+      html += '<div class="chips">' +
+        '<span class="stat green">' + resolvedN + ' resolved</span>' +
+        (c.reused ? '<span class="stat">' + c.reused + ' reused from library</span>' : '') +
+        '<span class="stat" style="background:var(--amber-soft);color:var(--amber)">' + plays(review) + ' need review</span>' +
+        '<span class="stat">' + plays(none) + ' unmatched</span>' +
+        (skipped.length ? '<span class="stat">' + plays(skipped) + ' skipped</span>' : '') +
+        (errors.length ? '<span class="stat" style="background:#fef2f2;color:var(--danger)">' + plays(errors) + ' errors</span>' : '') +
+        '<span class="muted small" style="align-self:center">Run ' + escapeHtml(new Date(rv.runAt).toLocaleString()) + ' · ' + escapeHtml(rv.scope || '') + '</span></div>';
+      if (rv.bulk && !st.running && db.tracks.some((t) => t.spotifyResolved && t.spotifyResolved.runId === rv.runId && t.spotifyResolved.method !== 'approved')) {
+        html += '<div class="row" style="margin-bottom:8px"><button class="btn btn-soft btn-sm" id="rs-undo-run">Undo this run\'s automatic matches</button></div>';
+      }
+      if (rv.undone) html += '<p class="small muted">' + rv.undone + ' automatic match' + (rv.undone === 1 ? ' was' : 'es were') + ' undone.</p>';
+    }
+    const more = (r) => r.alsoIds && r.alsoIds.length ? '<br><span>Also aired ' + r.alsoIds.length + ' more time' + (r.alsoIds.length === 1 ? '' : 's') + ' in this scope</span>' : '';
+    const candHtml = (cd) => '<b>' + escapeHtml(cd.name) + '</b> · ' + escapeHtml(cd.artists) +
+      '<br><span class="muted small">' + escapeHtml(cd.album) + (cd.year ? ' (' + escapeHtml(cd.year) + ')' : '') + '</span>' +
+      ' <a class="small" href="' + escapeHtml(cd.url) + '" target="_blank" rel="noopener noreferrer">Open in Spotify ↗</a>';
     if (review.length) {
       html += '<div class="section-title">Needs your review</div>' + review.map((r) =>
         '<div class="review-item" data-track="' + r.trackId + '"><div class="vs">' +
-        '<div><div class="lbl">Your track</div>' + trackLine(r.t) + '</div>' +
+        '<div><div class="lbl">Your track</div>' + trackLine(r.t) + more(r) + '</div>' +
         '<div><div class="lbl">Spotify suggestion</div>' + candHtml(r.cand) + '</div></div>' +
         '<div class="reason">⚠ ' + escapeHtml(r.reasons.join('; ')) + '</div>' +
         '<div class="row"><button class="btn btn-indigo btn-sm" data-rs="approve">Approve</button><button class="btn btn-soft btn-sm" data-rs="skip">Skip</button></div></div>').join('');
     }
     const doneList = (title, list, withUndo) => list.length ? '<div class="section-title">' + title + '</div><ul class="mini-list">' + list.map((r) =>
-      '<li data-track="' + r.trackId + '"><div class="t">' + trackLine(r.t) + '</div>' +
+      '<li data-track="' + r.trackId + '"><div class="t">' + trackLine(r.t) + more(r) + '</div>' +
       (r.cand ? '<div class="t small">→ ' + candHtml(r.cand) + '</div>' : '') +
       (withUndo && r.t.spotifyResolved ? '<button class="btn btn-soft btn-sm" data-rs="undo">Undo</button>' : '') +
       (r.outcome === 'none' || r.outcome === 'skipped' ? '<a class="btn btn-soft btn-sm" href="' + escapeHtml(safeUrl(r.t.spotifyUrl)) + '" target="_blank" rel="noopener noreferrer">Search Spotify ↗</a>' : '') +
       (r.error ? '<span class="small" style="color:var(--danger)">' + escapeHtml(r.error) + '</span>' : '') + '</li>').join('') + '</ul>' : '';
     html += doneList('Resolved automatically', auto, true) + doneList('Approved by you', approved, true) +
-      doneList('No match found', none, false) + doneList('Skipped', skipped, false) + doneList('Errors', errors, false);
+      doneList('No match found (kept as search links)', none, false) + doneList('Skipped', skipped, false) + doneList('Errors', errors, false);
   }
   body.innerHTML = html;
 }
 
 function openResolve() {
+  if (!rsBusy()) rsScopeFromFilters();
   renderResolve();
   $('#resolve-modal').classList.add('open');
 }
@@ -2537,12 +2770,27 @@ $('#resolve-switch').addEventListener('click', (e) => {
   renderResolve();
 });
 
+$('#resolve-body').addEventListener('change', (e) => {
+  const el = e.target;
+  if (el.id === 'rs-yt') { rsWithYt = el.checked; return; }
+  if (rsBusy()) return;
+  if (el.id === 'rs-source') { rsScope.source = el.value; rsScope.shows = []; }
+  else if (el.name === 'rs-dates') rsScope.dates = el.value;
+  else if (el.id === 'rs-from' || el.id === 'rs-to') { rsScope[el.id === 'rs-from' ? 'from' : 'to'] = el.value; rsScope.dates = 'range'; }
+  else if (el.classList.contains('rs-show')) {
+    rsScope.shows = rsScope.shows.filter((k) => k !== el.value).concat(el.checked ? [el.value] : []);
+  } else return;
+  renderResolve();
+});
+
 $('#resolve-body').addEventListener('click', (e) => {
   const btn = e.target.closest('button');
   if (!btn) return;
   if (resolveMode === 'youtube') { ytHandleClick(btn); return; }
-  if (btn.id === 'rs-run') { spRunResolve(); return; }
-  if (btn.id === 'rs-cancel') { spResolveState.cancel = true; return; }
+  if (btn.id === 'rs-run') { spRunBulk(); return; }
+  if (btn.id === 'rs-resume') { spRunBulk(db.spotifyReview.remaining.slice()); return; }
+  if (btn.id === 'rs-cancel') { spBulk.cancel = true; return; }
+  if (btn.id === 'rs-undo-run') { spUndoRun(); return; }
   if (btn.id === 'rs-connect') { $('#resolve-modal').classList.remove('open'); openConnections(); return; }
   const holder = btn.closest('[data-track]');
   const act = btn.dataset.rs;
@@ -2550,9 +2798,13 @@ $('#resolve-body').addEventListener('click', (e) => {
   const r = db.spotifyReview.results.find((x) => x.trackId === holder.dataset.track);
   const t = trackById(holder.dataset.track);
   if (!r || !t) return;
-  if (act === 'approve') { spApplyMatch(t, r.cand, 'approved'); r.outcome = 'approved'; }
+  const ids = [r.trackId].concat(r.alsoIds || []);
+  if (act === 'approve') { spStillPending(ids).forEach((x) => spApplyMatch(x, r.cand, 'approved')); r.outcome = 'approved'; }
   if (act === 'skip') r.outcome = 'skipped';
-  if (act === 'undo') { spUndo(t); r.outcome = 'review'; if (!r.reasons || !r.reasons.length) r.reasons = ['undone by you']; }
+  if (act === 'undo') {
+    ids.map(trackById).filter((x) => x && x.spotifyResolved && x.spotifyResolved.match && x.spotifyResolved.match.id === r.cand.id).forEach(spUndo);
+    r.outcome = 'review'; if (!r.reasons || !r.reasons.length) r.reasons = ['undone by you'];
+  }
   saveDb();
   renderAll();
   renderResolve();
@@ -2882,14 +3134,11 @@ let ytState = { running: false, cancel: false, index: 0, total: 0, current: '', 
 // Scope = Song Explorer's Source and Show Date filters; tracks that already have a direct link are skipped.
 // Tracks already searched (waiting for review, skipped or unmatched) are not searched again, to save quota.
 function ytScopeTracks() {
-  const date = $('#f-date').value;
   const searched = new Set(((db.youtubeReview && db.youtubeReview.results) || []).filter((r) => r.outcome !== 'error').map((r) => r.trackId));
-  return scopedTracks().filter((t) => (!date || t.showDate === date) && !ytVideoId(t.youtubeUrl) && !searched.has(t.id));
+  return rsScopeTracks().filter((t) => !ytVideoId(t.youtubeUrl) && !searched.has(t.id));
 }
-function ytScopeLabel() {
-  const date = $('#f-date').value;
-  return ($('#f-source').value || 'All sources') + (date ? ' · ' + labelFromIso(date) : ' · all dates');
-}
+function ytScopeLabel() { return rsScopeLabel(); }
+const YT_UNITS_PER_TRACK = 101; // one search (100) + one length check (1)
 
 async function ytSearch(q) {
   const params = new URLSearchParams({ part: 'snippet', type: 'video', maxResults: '10', videoCategoryId: '10', q, key: db.settings.youtubeApiKey });
@@ -2933,9 +3182,11 @@ async function ytRun(ids) {
   const rv = db.youtubeReview;
   rv.remaining = list.map((t) => t.id);
   ytState = { running: true, cancel: false, index: 0, total: list.length, current: '', stopReason: '' };
+  syncHold(true);
   renderResolve();
   for (let i = 0; i < list.length; i++) {
     if (ytState.cancel) { ytState.stopReason = 'Stopped by you.'; break; }
+    if (YT_DAILY_UNITS - ytUnitsToday() < YT_UNITS_PER_TRACK) { ytState.stopReason = 'quota'; break; }
     const t = list[i];
     ytState.index = i;
     ytState.current = t.song + ' – ' + t.artist;
@@ -2967,6 +3218,7 @@ async function ytRun(ids) {
   }
   ytState.running = false;
   saveDb();
+  syncHold(false);
   renderAll();
   renderResolve();
 }
@@ -2979,26 +3231,29 @@ function renderResolveYouTube() {
   const st = ytState;
   const rv = db.youtubeReview;
   const remaining = rv && rv.remaining ? rv.remaining.filter((id) => { const t = trackById(id); return t && !ytVideoId(t.youtubeUrl); }) : [];
-  let html = '<p>Searches YouTube for every track in the current view (Source and Show Date filters) that has no direct YouTube link yet. ' +
+  let html = '<p>Searches YouTube for every track in the scope below that has no direct YouTube link yet. ' +
     'Matches from the artist\'s official or "Topic" channel with the exact title are saved automatically as YouTube Music links; anything uncertain ' +
-    '(live versions, remasters, unofficial uploads, title differences) waits for your approval. Tracks with a direct link are never searched again, and Spotify links are never touched.</p>';
-  html += '<div class="row" style="margin-top:12px">' +
+    '(live versions, remasters, unofficial uploads, title differences) waits for your approval. Tracks with a direct link are never searched again, and Spotify links are never touched. ' +
+    'The run stops before the daily limit and can continue the next day.</p>';
+  html += rsScopeHtml();
+  if (!hasKey) html += '<div class="rs-note">YouTube searches need your YouTube API key saved on this device. Nothing runs without it. (A Spotify sign-in is not needed.)</div>';
+  html += '<div class="rs-run row' + (st.running ? ' live' : '') + '">' +
     (st.running
       ? '<button class="btn btn-soft" id="yt-cancel">Stop</button>'
-      : '<button class="btn btn-indigo" id="yt-run"' + (hasKey && pending ? '' : ' disabled') + '>' + icon('wand') + 'Run on ' + pending + ' track' + (pending === 1 ? '' : 's') + '</button>' +
-        (remaining.length ? '<button class="btn btn-outline" id="yt-resume">Resume ' + remaining.length + ' left from last run</button>' : '')) +
+      : '<button class="btn btn-indigo" id="yt-run"' + (hasKey && pending && ytSearchesLeft() ? '' : ' disabled') + '>' + icon('wand') + 'Run on ' + pending + ' track' + (pending === 1 ? '' : 's') + '</button>' +
+        (remaining.length ? '<button class="btn btn-outline" id="yt-resume"' + (ytSearchesLeft() ? '' : ' disabled') + '>Resume ' + remaining.length + ' left from last run</button>' : '')) +
     (hasKey ? '' : '<button class="btn btn-outline" id="yt-connect">' + icon('ytmusic') + 'Add your API key first</button>') +
     '<span class="muted small">Scope: ' + escapeHtml(ytScopeLabel()) + ' · ' + used + ' of ~' + YT_DAILY_SEARCHES + ' searches used today, ' + ytSearchesLeft() + ' left</span></div>';
-  if (pending > YT_DAILY_SEARCHES - used && !st.running) {
-    html += '<p class="small" style="color:var(--amber);margin-top:8px">This view needs ' + pending + ' searches and about ' + Math.max(0, YT_DAILY_SEARCHES - used) +
-      ' are left today. The run stops cleanly at the limit; use Resume after midnight Pacific (3 AM Eastern).</p>';
+  if (pending > YT_DAILY_SEARCHES - used && !st.running && ytSearchesLeft() > 0) {
+    html += '<p class="small" style="color:var(--amber);margin-top:8px">This scope needs ' + pending + ' searches and about ' + Math.max(0, YT_DAILY_SEARCHES - used) +
+      ' are left today. The run stops before the daily limit; use Resume after midnight Pacific (3 AM Eastern).</p>';
   }
   if (st.running) {
     html += '<div class="progress"><i style="width:' + Math.round(100 * st.index / Math.max(1, st.total)) + '%"></i></div>' +
-      '<div class="small muted">' + (st.index + 1) + ' of ' + st.total + ': ' + escapeHtml(st.current) + '</div>';
+      '<div class="small muted">' + (st.index + 1) + ' of ' + st.total + ': ' + escapeHtml(st.current) + ' · ' + ytSearchesLeft() + ' searches left today</div>';
   } else if (st.stopReason) {
     html += '<div class="report" style="margin-top:10px">' + (st.stopReason === 'quota'
-      ? '<b class="warn">Daily YouTube quota reached.</b> Progress is saved; ' + remaining.length + ' tracks are left. Come back after midnight Pacific (3 AM Eastern) and press Resume.'
+      ? '<b class="warn">Stopped before the daily limit:</b> ' + remaining.length + ' track' + (remaining.length === 1 ? '' : 's') + ' remain (' + ytSearchesLeft() + ' left today). Progress is saved; come back after midnight Pacific (3 AM Eastern) and press Resume.'
       : escapeHtml(st.stopReason)) + '</div>';
   }
   if (rv && rv.results && rv.results.length) {
@@ -3596,12 +3851,18 @@ function syncLoad() {
 function syncSave() { try { localStorage.setItem(SYNC_KEY, JSON.stringify(syncState)); } catch (e) { /* storage unavailable */ } }
 syncState = syncLoad();
 
+var syncHeld = false;
+function syncHold(on) {
+  syncHeld = on;
+  if (!on && typeof syncState !== 'undefined' && syncState && syncState.on && syncState.dirty) syncNoteChange();
+}
 function syncNoteChange() {
   if (!syncState || !syncState.on || syncApplying) return;
   syncSeq++;
   if (!syncState.dirty) { syncState.dirty = true; syncState.changedAt = new Date().toISOString(); syncSave(); }
-  setSyncStatus('warn', 'Not synced yet');
   clearTimeout(syncTimer);
+  if (syncHeld) { setSyncStatus('warn', 'Sync waits until link resolving finishes'); return; }
+  setSyncStatus('warn', 'Not synced yet');
   syncTimer = setTimeout(() => syncNow(), 3000);
 }
 
