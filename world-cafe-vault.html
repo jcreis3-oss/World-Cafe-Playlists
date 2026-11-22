@@ -287,8 +287,11 @@
   .src-tag.ootb { color: #d9541e; background: #fdf0ea; }
   .src-tag.xpn2 { color: #0f766e; background: #e6f4f2; }
   .ootb-bar.hr-bar span { background: #0f766e; }
+  .src-tag.alt { color: #4d6b0c; background: #eef5e0; }
+  .ootb-bar.hr-bar.alt span { background: #6f9a12; }
+  .hr-switch { margin: 4px 0 10px; max-width: 280px; }
   #hourly-import select { width: auto; min-width: 7.6em; padding: 6px 28px 6px 8px; }
-  .hr-table td:first-child .small { white-space: nowrap; }
+  .hr-table .hr-when { white-space: nowrap; }
   .show-card .hours { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 2px; }
   /* Out of the Box import */
   .ootb-modes { display: grid; gap: 8px; margin: 6px 0 10px; }
@@ -979,8 +982,13 @@
     </div>
 
     <div class="section" id="hourly-import">
-      <h3 style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">Hourly playlists <span class="src-tag xpn2">XPN2</span></h3>
-      <p>Adds XPN2 playlists one hour at a time from XPN's public playlist page (US Eastern times, back to 2019). Hours already in your library are skipped, the hour still airing is left out, and nothing already in your library is changed. You see a preview before anything is saved.</p>
+      <h3 style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">Hourly playlists <span class="src-tag xpn2" id="hr-tag">XPN2</span></h3>
+      <div class="seg hr-switch" id="hr-station" role="tablist" aria-label="Station">
+        <button class="seg-btn active" data-station="XPN2" role="tab">XPN2</button>
+        <button class="seg-btn" data-station="AltRadio" role="tab">AltRadio</button>
+      </div>
+      <p id="hr-intro">Adds XPN2 playlists one hour at a time from XPN's public playlist page (US Eastern times, back to 2019). Hours already in your library are skipped, the hour still airing is left out, and nothing already in your library is changed. You see a preview before anything is saved.</p>
+      <div class="ootb-warn" id="hr-relay-note" hidden>AltRadio needs the relay set up on this device (AI relay, above). XPN2 works without it.</div>
       <div class="ootb-modes" role="radiogroup" aria-label="Which hours">
         <label><input type="radio" name="hr-mode" value="latest" checked> Latest <input type="number" id="hr-n" value="3" min="1" max="24" inputmode="numeric" aria-label="Number of hours"> complete hours</label>
         <label><input type="radio" name="hr-mode" value="pick"> <input type="date" id="hr-date" aria-label="Date"> from <select id="hr-start" aria-label="Start hour"></select> for <input type="number" id="hr-count" value="1" min="1" max="24" inputmode="numeric" aria-label="Number of hours to import"> hour(s) <span class="small muted">(up to 24)</span></label>
@@ -996,7 +1004,7 @@
 
     <div class="section">
       <h3>Live feeds</h3>
-      <p>XPN2 and Out of the Box can be imported above; World Cafe daily still comes through the Sheet.</p>
+      <p>XPN2, AltRadio and Out of the Box can be imported above; World Cafe daily still comes through the Sheet.</p>
     </div>
 
     <div class="section">
@@ -1642,7 +1650,7 @@ function statusHtml(t) {
 }
 
 function sourceTag(source) {
-  return '<span class="src-tag' + (source === 'World Cafe' ? ' wc' : source === 'Out of the Box' ? ' ootb' : source === 'XPN2' ? ' xpn2' : '') + '">' + escapeHtml(source) + '</span>';
+  return '<span class="src-tag' + (source === 'World Cafe' ? ' wc' : source === 'Out of the Box' ? ' ootb' : source === 'XPN2' ? ' xpn2' : source === 'AltRadio' ? ' alt' : '') + '">' + escapeHtml(source) + '</span>';
 }
 
 /* =========================================================
@@ -4929,10 +4937,32 @@ const HOURLY = {
         return { date: m[1], hour: +m[2], minute: +m[3], stamp: m[0], artist: ootbClean(it.artist), song: ootbClean(it.song), album: ootbClean(it.album) };
       }).filter((r) => r && (r.artist || r.song));
     }
+  },
+  AltRadio: {
+    source: 'AltRadio', tag: 'alt', needsRelay: true, defaultMode: 'pick', defaultN: 1,
+    get earliest() { return isoAddDays(etNow().date, -150); },
+    tooOldText: 'WHRO keeps about 4 months of AltRadio playlists.',
+    intro: 'Adds AltRadio (WHRV 89.5 HD-2) playlists one hour at a time from WHRO\'s own station playlist (US Eastern times; WHRO keeps about 4 months). It is read through your relay, so the relay must be set up on this device.',
+    headerNote: 'WHRO playlist',
+    archiveNotes: 'AltRadio playlist: https://mediaplayer.whro.org/station/altradio',
+    // WHRO's day file has no permission header for other sites, so the relay fetches it (GET /altradio?date=).
+    async fetchDay(iso) {
+      if (!aiConfigured()) throw new Error('the relay is not set up on this device');
+      let res;
+      try {
+        res = await fetch(aiEndpoint('/altradio?date=' + iso), { headers: { 'X-App-Token': db.settings.aiAppToken }, cache: 'no-store' });
+      } catch (e) { throw new Error('could not reach the relay'); }
+      const d = await res.json().catch(() => ({}));
+      if (res.status === 404 && d.noPlaylist) return iso < isoAddDays(etNow().date, -1) ? { old: true } : null;
+      if (res.status === 404) throw new Error('the relay does not have the AltRadio reader yet');
+      if (res.status === 401) throw new Error('the relay refused the app token');
+      if (!res.ok) throw new Error(d.error || 'the relay answered HTTP ' + res.status);
+      return altParseDay(String(d.html || ''), iso);
+    }
   }
 };
 // A function (not a constant) so Show Archives can use it while the page is still loading.
-function isHourlySource(s) { return s === 'XPN2'; }
+function isHourlySource(s) { return s === 'XPN2' || s === 'AltRadio'; }
 let hrStation = 'XPN2';
 let hrRun = null;          // { cancelled } while checking
 let hrFound = [];          // hours from the last check
@@ -4943,6 +4973,69 @@ function etNow() {
     .formatToParts(new Date()).map((x) => [x.type, x.value]));
   return { date: p.year + '-' + p.month + '-' + p.day, hour: parseInt(p.hour, 10) % 24 };
 }
+// Reads WHRO's AltRadio day page: program headers ("Afternoon Sampler: 12pm - 4pm"), then rows of
+// Time | Composer | Title | Artist (+ "Album: …"). Only the text is read; nothing from the page runs.
+function altParseDay(html, iso) {
+  const doc = new DOMParser().parseFromString('<div>' + html + '</div>', 'text/html');
+  const rows = [];
+  doc.querySelectorAll('.stationPlaylistHeader').forEach((hd) => {
+    const h2 = hd.querySelector('h2');
+    if (h2) h2.querySelectorAll('span').forEach((s) => s.remove());
+    const program = ootbClean((h2 ? h2.textContent : '').replace(/:\s*[^:]*$/, ''));
+    let pl = hd.nextElementSibling;
+    while (pl && !pl.classList.contains('playlist') && !pl.classList.contains('stationPlaylistHeader')) pl = pl.nextElementSibling;
+    if (!pl || !pl.classList.contains('playlist')) return;
+    const cells = [...pl.children].filter((c) => /\bcol-md-\d+\b/.test(c.className) && !c.classList.contains('font-bold'));
+    for (let i = 0; i + 3 < cells.length; i += 4) {
+      const m = /^(\d{1,2}):(\d{2})$/.exec(cells[i].textContent.trim());
+      if (!m) continue;
+      const spans = [...cells[i + 3].querySelectorAll('.artist')].map((s) => ootbClean(s.textContent));
+      const artist = spans.find((s) => !/^Album:/i.test(s)) || ootbClean(cells[i + 3].textContent);
+      const albumLine = spans.find((s) => /^Album:/i.test(s));
+      const listed = ootbClean(cells[i + 2].textContent);
+      const c = altCleanTitle(listed, artist);
+      if (!artist && !c.song) continue;
+      rows.push({ date: iso, hour: +m[1], minute: +m[2], stamp: iso + ' ' + m[1].padStart(2, '0') + ':' + m[2], artist, song: c.song,
+        album: albumLine ? ootbClean(albumLine.replace(/^Album:\s*/i, '')) : '', program, notes: c.changed ? 'Listed as: ' + listed : '' });
+    }
+  });
+  return rows;
+}
+// Only two exact patterns are removed: a trailing "(EDITED)" and a leading "<same artist> - ".
+function altCleanTitle(title, artist) {
+  let s = title.replace(/\s*\(EDITED\)\s*$/i, '');
+  const pre = (artist || '') + ' - ';
+  if (artist && s.toLowerCase().startsWith(pre.toLowerCase())) s = s.slice(pre.length);
+  s = ootbClean(s);
+  return { song: s || title, changed: !!s && s !== title };
+}
+
+function hrRenderStation() {
+  const st = HOURLY[hrStation];
+  document.querySelectorAll('#hr-station .seg-btn').forEach((b) => b.classList.toggle('active', b.dataset.station === hrStation));
+  const tag = $('#hr-tag');
+  tag.className = 'src-tag ' + st.tag;
+  tag.textContent = st.source;
+  $('#hr-intro').textContent = st.intro + ' Hours already in your library are skipped, the hour still airing is left out, and nothing already in your library is changed. You see a preview before anything is saved.';
+  $('#hr-bar-fill').parentElement.className = 'ootb-bar hr-bar ' + st.tag;
+  const note = $('#hr-relay-note');
+  note.hidden = !(st.needsRelay && !aiConfigured());
+}
+function hrSwitchStation(name) {
+  if (!HOURLY[name] || hrRun) return;
+  hrStation = name;
+  hrFound = [];
+  $('#hr-preview').innerHTML = '';
+  $('#hr-progress').hidden = true;
+  const st = HOURLY[name];
+  $('#hr-n').value = st.defaultN;
+  $('#hr-count').value = 1;
+  document.querySelector('input[name="hr-mode"][value="' + (st.defaultMode || 'latest') + '"]').checked = true;
+  $('#hr-start').dataset.touched = '';
+  hrSetDefaults();
+  hrRenderStation();
+}
+
 function hrLabel(h) {
   const f = (x) => ((x % 12) || 12) + ':00';
   const ap = (x) => ((x % 24) < 12 ? 'AM' : 'PM');
@@ -4983,7 +5076,7 @@ function hrWindows() {
   } else {
     const iso = $('#hr-date').value;
     if (!iso) throw new Error('Choose a date.');
-    if (iso < st.earliest) throw new Error('The ' + st.source + ' playlist goes back to ' + labelFromIso(st.earliest) + '.');
+    if (iso < st.earliest) throw new Error(st.tooOldText || 'The ' + st.source + ' playlist goes back to ' + labelFromIso(st.earliest) + '.');
     if (iso > now.date) throw new Error('That date has not happened yet.');
     const start = parseInt($('#hr-start').value, 10) || 0;
     const count = Math.min(24, Math.max(1, parseInt($('#hr-count').value, 10) || 1));
@@ -4998,6 +5091,7 @@ async function hrCheck() {
   let wins;
   try { wins = hrWindows(); } catch (e) { toast(e.message, 'error'); return; }
   const st = HOURLY[hrStation];
+  if (st.needsRelay && !aiConfigured()) { hrRenderStation(); toast(st.source + ' needs the relay set up on this device.', 'error'); return; }
   hrRun = { cancelled: false };
   hrFound = [];
   $('#hr-preview').innerHTML = '';
@@ -5021,9 +5115,11 @@ async function hrCheck() {
     if (w.timing) e.state = w.timing;
     else if (!data.has(w.date)) e.state = 'skipped';
     else if (day && day.error) { e.state = 'error'; e.error = day.error; }
+    else if (day && day.old) { e.state = 'old'; e.error = 'Too old: ' + (st.tooOldText || 'not available'); }
     else {
       // A song belongs to the hour it started in; oldest first within the hour.
       e.rows = (day || []).filter((r) => r.date === w.date && r.hour === w.hour).sort((a, b) => a.stamp.localeCompare(b.stamp));
+      e.program = (e.rows.find((r) => r.program) || {}).program || '';
       e.state = e.exists ? 'exists' : e.rows.length ? 'new' : 'empty';
     }
     return e;
@@ -5072,8 +5168,8 @@ function renderHrPreview() {
     old: '<span class="skip">' + escapeHtml(x.error || 'Too old') + '</span>',
     error: '<span class="skip">Could not read (' + escapeHtml(x.error || '') + ')</span>'
   }[x.state]);
-  const rows = hrFound.map((x) => '<tr><td>' + escapeHtml(labelFromIso(x.date)) + '<br><span class="small muted">' + escapeHtml(x.label) +
-    (x.program ? ' · ' + escapeHtml(x.program) : '') + '</span></td><td>' + (x.rows.length || (x.state === 'new' ? 0 : '–')) + '</td><td>' + status(x) + '</td></tr>').join('');
+  const rows = hrFound.map((x) => '<tr><td>' + escapeHtml(labelFromIso(x.date)) + '<br><span class="small muted hr-when">' + escapeHtml(x.label) + '</span>' +
+    (x.program ? '<br><span class="small muted">' + escapeHtml(x.program) + '</span>' : '') + '</td><td>' + (x.rows.length || (x.state === 'new' ? 0 : '–')) + '</td><td>' + status(x) + '</td></tr>').join('');
   const pct = Math.min(100, Math.round(after / SYNC_SIZE_LIMIT * 100));
   box.innerHTML =
     '<table class="ootb-table hr-table"><thead><tr><th>Hour</th><th>Tracks</th><th>Status</th></tr></thead><tbody>' + rows + '</tbody></table>' +
@@ -5125,7 +5221,8 @@ $('#hr-preview').addEventListener('click', (e) => { if (e.target.id === 'hr-impo
   document.querySelector('input[name="hr-mode"][value="pick"]').checked = true;
 }));
 $('#hr-n').addEventListener('input', () => { document.querySelector('input[name="hr-mode"][value="latest"]').checked = true; });
-$('#btn-import').addEventListener('click', hrSetDefaults);
+$('#btn-import').addEventListener('click', () => { hrSetDefaults(); hrRenderStation(); });
+$('#hr-station').addEventListener('click', (e) => { const b = e.target.closest('[data-station]'); if (b) hrSwitchStation(b.dataset.station); });
 hrSetDefaults();
 
 // Resource-row logos reuse the header's embedded images.

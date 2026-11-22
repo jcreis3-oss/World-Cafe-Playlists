@@ -20,7 +20,9 @@
 //   PUT  /sync?base=N&device=..   -> save a new copy; refused with 409 unless N is the latest version
 //   GET  /sync/history            -> the last 5 saved copies (version, time, device, counts)
 //   GET  /sync/copy?v=N           -> one saved copy
-// Sync requests never count as AI runs. Saved copies must not contain the YouTube API key,
+//   GET  /altradio?date=YYYY-MM-DD -> { date, html } from WHRO's public AltRadio day playlist
+//                                    (read-only; WHRO's page cannot be read by the app directly)
+// Sync and AltRadio requests never count as AI runs. Saved copies must not contain the YouTube API key,
 // the relay token or the Worker address; the Worker refuses any copy that does.
 //
 // This Worker never logs requests or instructions. Turn Workers Logs off in the
@@ -68,6 +70,10 @@ export default {
     }
     const url = new URL(request.url);
     if (url.pathname === '/sync' || url.pathname.startsWith('/sync/')) return handleSync(request, env, url, cors, reply);
+    if (url.pathname === '/altradio') {
+      if (request.method !== 'GET') return reply(405, { error: 'Use GET.' });
+      return handleAltRadio(url, reply);
+    }
 
     if (!env.RATE) return reply(500, { error: 'Worker setup: KV binding RATE is missing.' });
     const limit = Math.max(0, parseInt(env.DAILY_LIMIT || '60', 10) || 0);
@@ -219,6 +225,31 @@ async function handleSync(request, env, url, cors, reply) {
     return reply(200, { version, updatedAt: now, device, tracks, playlists });
   }
   return reply(404, { error: 'Not found.' });
+}
+
+// ---------------- AltRadio playlist (read-only) ----------------
+// Fetches only WHRO's public AltRadio day page for one date and passes its text back unchanged;
+// the app reads it. Nothing is stored. Cloudflare's cache keeps past days for a day, today for 5 minutes.
+const ALTRADIO_URL = 'https://mediaplayer.whro.org/playlists/altradio/';
+const ALTRADIO_MAX_BYTES = 600000;
+
+async function handleAltRadio(url, reply) {
+  const date = url.searchParams.get('date') || '';
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return reply(400, { error: 'Use date=YYYY-MM-DD.' });
+  const today = new Date().toISOString().slice(0, 10);
+  let res;
+  try {
+    res = await fetch(ALTRADIO_URL + date + '.txt', { cf: { cacheEverything: true, cacheTtl: date < today ? 86400 : 300 } });
+  } catch (e) {
+    return reply(502, { error: 'Could not reach WHRO.' });
+  }
+  if (res.status === 404) return reply(404, { error: 'No AltRadio playlist for that date.', noPlaylist: true });
+  if (!res.ok) return reply(502, { error: 'WHRO answered HTTP ' + res.status + '.' });
+  const html = await res.text();
+  if (new TextEncoder().encode(html).length > ALTRADIO_MAX_BYTES) return reply(502, { error: 'WHRO sent an unexpectedly large page.' });
+  // WHRO's own player treats a full HTML page as "no playlist" (an error page, not a day file).
+  if (/^\s*<!DOCTYPE/i.test(html)) return reply(404, { error: 'No AltRadio playlist for that date.', noPlaylist: true });
+  return reply(200, { date, html });
 }
 
 function parsePicks(text) {
