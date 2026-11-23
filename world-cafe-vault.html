@@ -477,6 +477,22 @@
   .pq-sep { flex: 1; }
   .pq-pref { font: inherit; font-size: 0.72rem; font-weight: 700; border: 1px solid var(--border); background: var(--card); border-radius: 999px; padding: 5px 10px; cursor: pointer; color: var(--muted); white-space: nowrap; }
   .pq-warn { font-size: 0.76rem; color: #92400e; margin-top: 6px; }
+  /* Manual YouTube links */
+  .yte { flex-basis: 100%; width: 100%; border: 1px solid var(--border); border-radius: 12px; padding: 12px; background: #fbfcfe; margin: 6px 0 4px; display: grid; gap: 8px; }
+  .yte input[type="text"] { width: 100%; }
+  .yte-err { color: var(--danger); font-weight: 700; }
+  .yte-ok { color: var(--spotify-text); font-weight: 700; display: inline-flex; align-items: center; gap: 4px; }
+  .yte-prev:empty { display: none; }
+  .yte-prev { display: flex; gap: 12px; align-items: center; }
+  .yte-prev img { width: 160px; height: 90px; object-fit: cover; border-radius: 8px; background: #000; flex: none; }
+  .yte-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; font-size: 0.86rem; }
+  .yte-actions { flex-wrap: wrap; gap: 8px; }
+  .yt-mine { font-size: 0.72rem; font-weight: 800; color: var(--indigo); background: #eef2ff; border-radius: 999px; padding: 3px 9px; white-space: nowrap; }
+  .stat.yt-mine-chip { color: var(--indigo); background: #eef2ff; }
+  .yt-f { border: 1px solid var(--border); background: var(--card); color: #334155; font: inherit; font-size: 0.82rem; font-weight: 600; padding: 6px 12px; border-radius: 999px; cursor: pointer; }
+  .yt-f b { color: var(--muted); font-weight: 700; margin-left: 2px; }
+  .yt-f.active { background: var(--indigo); border-color: var(--indigo); color: #fff; }
+  .yt-f.active b { color: #e0e7ff; }
   .pq-warn[hidden] { display: none; }
   li.pq-now { background: #eef2ff; box-shadow: inset 3px 0 0 var(--indigo); border-radius: 8px; }
   li.pq-now .n, .playlist-card li.pq-now > span:first-of-type { color: var(--indigo); font-weight: 800; }
@@ -655,6 +671,9 @@
     .player-dock { left: 0; right: 0; bottom: 0; width: 100%; max-width: none; border-radius: 14px 14px 0 0; border-bottom: none; }
     .pd-btn { width: 40px; height: 40px; }
     .pd-queue .pd-btn { width: 36px; height: 36px; }
+    .yte-prev { align-items: flex-start; }
+    .yte-prev img { width: 120px; height: 68px; }
+    .yte-actions .btn { flex: 1 1 calc(50% - 8px); justify-content: center; }
     .pd-msg { padding: 7px 12px; font-size: 0.76rem; }
     .pd-queue { padding: 6px 10px 6px 12px; }
     .pq-ctrls { gap: 4px; }
@@ -1157,8 +1176,8 @@
         <select id="form-status"><option>Verified Direct</option><option>Search Query</option></select></div>
       <div class="form-group full"><label for="form-spotify">Spotify URL</label><input type="url" id="form-spotify" placeholder="https://open.spotify.com/track/…">
         <div class="form-hint">Leave blank to use a Spotify search link. Existing links are never changed unless you edit them here.</div></div>
-      <div class="form-group full"><label for="form-youtube">YouTube URL</label><input type="url" id="form-youtube" placeholder="https://music.youtube.com/…">
-        <div class="form-hint">Leave blank to use a YouTube Music search link.</div></div>
+      <div class="form-group full"><label for="form-youtube">YouTube URL</label><input type="text" inputmode="url" autocomplete="off" spellcheck="false" id="form-youtube" placeholder="https://music.youtube.com/…">
+        <div class="form-hint">Paste a YouTube link or video ID. Leave blank to use a YouTube Music search link.</div></div>
       <div class="form-group full"><label for="form-notes">Broadcast Notes</label><textarea id="form-notes"></textarea></div>
     </div>
     <div class="modal-actions">
@@ -2137,9 +2156,21 @@ function saveTrackFromForm(ev) {
 
   // URLs: keep exactly what is in the field. Only fill a search link when the field is empty.
   let spotifyUrl = $('#form-spotify').value;
-  let youtubeUrl = $('#form-youtube').value;
+  let youtubeUrl = $('#form-youtube').value.trim();
   if (!spotifyUrl.trim()) spotifyUrl = spotifySearchUrl(artist, song);
-  if (!youtubeUrl.trim()) youtubeUrl = youtubeSearchUrl(artist, song);
+  // YouTube: an unchanged field is kept exactly. A changed link must be one video (same checks as the paste box);
+  // it is stored as a YouTube Music link and marked Set by you. A search link or an empty field goes back to automatic.
+  let ytSet = null, ytBack = false;
+  if (!existing || youtubeUrl !== (existing.youtubeUrl || '')) {
+    if (!youtubeUrl || /^(https?:\/\/)?(www\.|music\.|m\.)?youtube\.com\/(search|results)\b/i.test(youtubeUrl)) {
+      if (!youtubeUrl) youtubeUrl = youtubeSearchUrl(artist, song);
+      ytBack = !!existing;
+    } else {
+      const p = ytParseInput(youtubeUrl);
+      if (p.error) { toast('YouTube URL: ' + p.error, 'error'); $('#form-youtube').focus(); return; }
+      ytSet = p.id;
+    }
+  }
   let linkStatus = $('#form-status').value;
   if (linkStatus === VERIFIED && !isDirectSpotify(spotifyUrl)) linkStatus = SEARCH;
   if (isDirectSpotify(spotifyUrl)) linkStatus = VERIFIED;
@@ -2150,10 +2181,20 @@ function saveTrackFromForm(ev) {
     featuredGuest: $('#form-guest').value.trim(), type: $('#form-type').value, linkStatus,
     spotifyUrl, youtubeUrl, notes: $('#form-notes').value.trim()
   };
+  if (ytSet) fields.youtubeUrl = existing ? existing.youtubeUrl : youtubeSearchUrl(artist, song);
+  let saved = existing;
   if (existing) {
     Object.assign(existing, fields);
   } else {
-    db.tracks.push(Object.assign({ id: newId('t'), position: 0, addedAt: new Date().toISOString() }, fields));
+    saved = Object.assign({ id: newId('t'), position: 0, addedAt: new Date().toISOString() }, fields);
+    db.tracks.push(saved);
+  }
+  if (ytSet && ytVideoId(saved.youtubeUrl) !== ytSet) ytSetManual(saved, 'link', ytSet);   // the same video in another form is not a change
+  if (ytBack && (saved.youtubeManual || saved.youtubeResolved)) {
+    delete saved.youtubeManual;
+    delete saved.youtubeResolved;
+    const r = db.youtubeReview && db.youtubeReview.results.find((x) => x.trackId === saved.id);
+    if (r) r.outcome = 'cleared';
   }
   saveDb();
   closeTrackModal();
@@ -2933,9 +2974,17 @@ $('#resolve-switch').addEventListener('click', (e) => {
   renderResolve();
 });
 
+$('#resolve-body').addEventListener('input', (e) => { if (e.target.id === 'yte-input') ytOnInput(e.target); });
+$('#resolve-body').addEventListener('keydown', (e) => {
+  if (e.target.id !== 'yte-input') return;
+  if (e.key === 'Enter') { e.preventDefault(); const b = document.querySelector('[data-yt="e-save"]'); if (b && !b.disabled) b.click(); }
+  if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); const b = document.querySelector('[data-yt="e-cancel"]'); if (b) b.click(); }   // closes only the paste box
+});
 $('#resolve-body').addEventListener('change', (e) => {
   const el = e.target;
   if (el.id === 'rs-yt') { rsWithYt = el.checked; return; }
+  if (el.id === 'yt-manual') { ytSetManualMode(el.checked); ytEdit.trackId = null; renderResolve(); return; }
+  if (el.id === 'yte-others') return;
   if (rsBusy()) return;
   if (el.id === 'rs-source') { rsScope.source = el.value; rsScope.shows = []; }
   else if (el.name === 'rs-dates') rsScope.dates = el.value;
@@ -2943,10 +2992,18 @@ $('#resolve-body').addEventListener('change', (e) => {
   else if (el.classList.contains('rs-show')) {
     rsScope.shows = rsScope.shows.filter((k) => k !== el.value).concat(el.checked ? [el.value] : []);
   } else return;
+  ytMLimit = 50;
   renderResolve();
 });
 
 $('#resolve-body').addEventListener('click', (e) => {
+  // "Search YouTube ↗" opens YouTube's own search in a new tab and the paste box here, ready for the link.
+  const sa = e.target.closest('a[data-yt-search]');
+  if (sa && resolveMode === 'youtube') {
+    ytOpenEdit(sa.dataset.ytSearch);
+    setTimeout(() => { renderResolve(); const i = $('#yte-input'); if (i) i.focus({ preventScroll: true }); }, 0);
+    return;
+  }
   const btn = e.target.closest('button');
   if (!btn) return;
   if (resolveMode === 'youtube') { ytHandleClick(btn); return; }
@@ -3138,7 +3195,7 @@ const YT_DAILY_SEARCHES = 100; // 10,000 units / 100 per search.list call
 const YT_SEARCH_URL = 'https://www.googleapis.com/youtube/v3/search';
 
 function ytVideoId(url) {
-  const m = /(?:[?&]v=|youtu\.be\/)([A-Za-z0-9_-]{11})/.exec(url || '');
+  const m = /(?:[?&]v=|youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:shorts|embed|live)\/)([A-Za-z0-9_-]{11})/.exec(url || '');
   return m ? m[1] : null;
 }
 
@@ -3298,8 +3355,8 @@ let ytState = { running: false, cancel: false, index: 0, total: 0, current: '', 
 // Scope = Song Explorer's Source and Show Date filters; tracks that already have a direct link are skipped.
 // Tracks already searched (waiting for review, skipped or unmatched) are not searched again, to save quota.
 function ytScopeTracks() {
-  const searched = new Set(((db.youtubeReview && db.youtubeReview.results) || []).filter((r) => r.outcome !== 'error').map((r) => r.trackId));
-  return rsScopeTracks().filter((t) => !ytVideoId(t.youtubeUrl) && !searched.has(t.id));
+  const searched = new Set(((db.youtubeReview && db.youtubeReview.results) || []).filter((r) => r.outcome !== 'error' && r.outcome !== 'cleared').map((r) => r.trackId));
+  return rsScopeTracks().filter((t) => !ytVideoId(t.youtubeUrl) && !t.youtubeManual && !searched.has(t.id));
 }
 function ytScopeLabel() { return rsScopeLabel(); }
 const YT_UNITS_PER_TRACK = 101; // one search (100) + one length check (1)
@@ -3337,7 +3394,7 @@ async function ytAddDurations(items) {
 
 async function ytRun(ids) {
   if (!db.settings.youtubeApiKey) { toast('Save your YouTube API key first.', 'error'); return; }
-  const list = ids ? ids.map(trackById).filter((t) => t && !ytVideoId(t.youtubeUrl)) : ytScopeTracks();
+  const list = ids ? ids.map(trackById).filter((t) => t && !ytVideoId(t.youtubeUrl) && !t.youtubeManual) : ytScopeTracks();
   if (!list.length) { toast('No tracks without a direct YouTube link in this view.'); return; }
   const resuming = !!ids && db.youtubeReview;
   // Results accumulate across runs (one show today, more shows later) so earlier reviews are not lost.
@@ -3352,6 +3409,8 @@ async function ytRun(ids) {
     if (ytState.cancel) { ytState.stopReason = 'Stopped by you.'; break; }
     if (YT_DAILY_UNITS - ytUnitsToday() < YT_UNITS_PER_TRACK) { ytState.stopReason = 'quota'; break; }
     const t = list[i];
+    // set by you while the run was going: never searched, never changed
+    if (t.youtubeManual) { rv.remaining = rv.remaining.filter((x) => x !== t.id); continue; }
     ytState.index = i;
     ytState.current = t.song + ' – ' + t.artist;
     renderResolve();
@@ -3395,7 +3454,15 @@ function renderResolveYouTube() {
   const st = ytState;
   const rv = db.youtubeReview;
   const remaining = rv && rv.remaining ? rv.remaining.filter((id) => { const t = trackById(id); return t && !ytVideoId(t.youtubeUrl); }) : [];
-  let html = '<p>Searches YouTube for every track in the scope below that has no direct YouTube link yet. ' +
+  const manual = ytManualMode() && !st.running;
+  const toggle = '<label class="rs-yt"><input type="checkbox" id="yt-manual"' + (manual ? ' checked' : '') + (st.running ? ' disabled' : '') +
+    '><span><b>Manual mode</b>: paste links yourself. No API key, no searches.</span></label>';
+  if (manual) {
+    body.innerHTML = toggle + '<p>Every track in the scope below that needs a YouTube link. Use <b>Search YouTube ↗</b> to find the song, copy the video\'s link, then <b>Set link</b> and paste it. ' +
+      'Links you set are marked <b>Set by you</b> and automatic runs never change them.</p>' + rsScopeHtml() + ytManualHtml(rv);
+    return;
+  }
+  let html = toggle + '<p>Searches YouTube for every track in the scope below that has no direct YouTube link yet. ' +
     'Matches from the artist\'s official or "Topic" channel with the exact title are saved automatically as YouTube Music links; anything uncertain ' +
     '(live versions, remasters, unofficial uploads, title differences) waits for your approval. Tracks with a direct link are never searched again, and Spotify links are never touched. ' +
     'The run stops before the daily limit and can continue the next day.</p>';
@@ -3423,43 +3490,288 @@ function renderResolveYouTube() {
   if (rv && rv.results && rv.results.length) {
     const rows = rv.results.map((r) => Object.assign({ t: trackById(r.trackId) }, r)).filter((r) => r.t);
     const by = (o) => rows.filter((r) => r.outcome === o);
-    const auto = by('auto'), approved = by('approved'), review = by('review'), skipped = by('skipped'), none = by('none'), errors = by('error');
+    const auto = by('auto'), approved = by('approved'), review = by('review'), skipped = by('skipped'), none = by('none'), errors = by('error'),
+      manual = by('manual'), cleared = by('cleared');
     html += '<div class="chips">' +
       '<span class="stat green">' + (auto.length + approved.length) + ' resolved</span>' +
+      (manual.length ? '<span class="stat yt-mine-chip">' + manual.length + ' set by you</span>' : '') +
       '<span class="stat" style="background:var(--amber-soft);color:var(--amber)">' + review.length + ' need review</span>' +
       '<span class="stat">' + none.length + ' unmatched</span>' +
       (skipped.length ? '<span class="stat">' + skipped.length + ' skipped</span>' : '') +
+      (cleared.length ? '<span class="stat">' + cleared.length + ' back to automatic</span>' : '') +
       (errors.length ? '<span class="stat" style="background:#fef2f2;color:var(--danger)">' + errors.length + ' errors</span>' : '') +
       '<span class="muted small" style="align-self:center">Run ' + escapeHtml(new Date(rv.runAt).toLocaleString()) + ' · ' + escapeHtml(rv.scope || '') + '</span></div>';
     const candHtml = (c) => '<b>' + escapeHtml(c.title) + '</b><br><span class="muted small">' + escapeHtml(c.channel) + (c.year ? ' · ' + escapeHtml(c.year) : '') + '</span>' +
       ' <a class="small" href="' + escapeHtml(c.url) + '" target="_blank" rel="noopener noreferrer">Open in YouTube Music ↗</a>';
+    const yourLink = (t) => ytVideoId(t.youtubeUrl) ? '<div class="t small">→ <a href="' + escapeHtml(t.youtubeUrl) + '" target="_blank" rel="noopener noreferrer">' + (t.youtubeManual ? 'Your link' : 'Current link') + ': video ' + escapeHtml(ytVideoId(t.youtubeUrl)) + ' ↗</a></div>' : '';
+    const panel = (t) => (ytEdit.trackId === t.id ? ytEditPanelHtml(t) : '');
+    ytRowOrder = [];
+    const order = (list) => { list.forEach((r) => ytRowOrder.push(r.trackId)); return list; };
     if (review.length) {
-      html += '<div class="section-title">Needs your review</div>' + review.map((r) =>
+      html += '<div class="section-title">Needs your review</div>' + order(review).map((r) =>
         '<div class="review-item" data-track="' + r.trackId + '"><div class="vs">' +
         '<div><div class="lbl">Your track</div>' + trackLine(r.t) + '</div>' +
         '<div><div class="lbl">YouTube suggestion</div>' + candHtml(r.cand) + '</div></div>' +
         '<div class="reason">⚠ ' + escapeHtml(r.reasons.join('; ')) + '</div>' +
-        '<div class="row"><button class="btn btn-indigo btn-sm" data-yt="approve">Approve</button><button class="btn btn-soft btn-sm" data-yt="skip">Skip</button></div></div>').join('');
+        '<div class="row"><button class="btn btn-indigo btn-sm" data-yt="approve">Approve</button><button class="btn btn-soft btn-sm" data-yt="skip">Skip</button>' +
+        ytRowActions(r.t) + ytSearchLink(r.t) + '</div>' + panel(r.t) + '</div>').join('');
     }
-    const doneList = (title, list, withUndo) => list.length ? '<div class="section-title">' + title + '</div><ul class="mini-list">' + list.map((r) =>
+    const doneList = (title, list, withUndo, search) => list.length ? '<div class="section-title">' + title + '</div><ul class="mini-list">' + order(list).map((r) =>
       '<li data-track="' + r.trackId + '"><div class="t">' + trackLine(r.t) + '</div>' +
-      (r.cand ? '<div class="t small">→ ' + candHtml(r.cand) + '</div>' : '') +
-      (withUndo && r.t.youtubeResolved ? '<button class="btn btn-soft btn-sm" data-yt="undo">Undo</button>' : '') +
-      (r.outcome === 'none' || r.outcome === 'skipped' ? '<a class="btn btn-soft btn-sm" href="' + escapeHtml(safeUrl(r.t.youtubeUrl)) + '" target="_blank" rel="noopener noreferrer">Search YouTube Music ↗</a>' : '') +
-      (r.error ? '<span class="small" style="color:var(--danger)">' + escapeHtml(r.error) + '</span>' : '') + '</li>').join('') + '</ul>' : '';
-    html += doneList('Resolved automatically', auto, true) + doneList('Approved by you', approved, true) +
-      doneList('No match found', none, false) + doneList('Skipped', skipped, false) + doneList('Errors', errors, false);
+      (r.outcome === 'manual' || r.outcome === 'cleared' ? yourLink(r.t) : (r.cand && ytVideoId(r.t.youtubeUrl) ? '<div class="t small">→ ' + candHtml(r.cand) + '</div>' : yourLink(r.t))) +
+      (withUndo && r.t.youtubeResolved && !r.t.youtubeManual ? '<button class="btn btn-soft btn-sm" data-yt="undo">Undo</button>' : '') +
+      ytRowActions(r.t) + (search ? ytSearchLink(r.t) : '') +
+      (r.error ? '<span class="small" style="color:var(--danger)">' + escapeHtml(r.error) + '</span>' : '') + panel(r.t) + '</li>').join('') + '</ul>' : '';
+    html += doneList('No match found', none, false, true) + doneList('Skipped', skipped, false, true) +
+      doneList('Back to automatic (searched again next run)', cleared, false, true) +
+      doneList('Set by you', manual, false, true) +
+      doneList('Resolved automatically', auto, true, false) + doneList('Approved by you', approved, true, false) +
+      doneList('Errors', errors, false, true);
   }
   body.innerHTML = html;
 }
 
+/* ---------- Manual YouTube links (no API) ----------
+   Paste a link or video ID, see a preview, save. A saved choice is marked "Set by you"
+   (track.youtubeManual) and the automatic run never searches or changes that track.
+   Clear link and Reset to automatic remove the marker so the next run may search again.
+   The preview uses YouTube's public oEmbed page and thumbnail images: no key, no quota. */
+const YT_ID_RE = /^[A-Za-z0-9_-]{11}$/;
+const ytWatchUrl = (id) => 'https://music.youtube.com/watch?v=' + id;
+
+// Reads a pasted YouTube link or bare video ID. Returns { id, note } or { error }.
+function ytParseInput(raw) {
+  const s = String(raw || '').trim();
+  if (!s) return { error: '' };
+  if (YT_ID_RE.test(s)) return { id: s, note: '' };
+  let u;
+  try { u = new URL(/^[a-z]+:\/\//i.test(s) ? s : 'https://' + s); } catch (e) { return { error: 'That isn’t a YouTube link.' }; }
+  const host = u.hostname.toLowerCase().replace(/^(www|m|music)\./, '');
+  if (!['youtube.com', 'youtu.be', 'youtube-nocookie.com'].includes(host)) return { error: 'That isn’t a YouTube link.' };
+  let id = null;
+  if (host === 'youtu.be') id = u.pathname.split('/')[1] || null;
+  else if (u.pathname === '/watch') id = u.searchParams.get('v');
+  else { const m = /^\/(shorts|embed|live|v)\/([^/?#]+)/.exec(u.pathname); if (m) id = m[2]; }
+  if (!id) {
+    if (u.pathname === '/playlist' || u.searchParams.get('list')) return { error: 'That’s a playlist, not a single video. Open one video and copy its link.' };
+    if (/^\/(@|channel\/|c\/|user\/)/.test(u.pathname)) return { error: 'That’s a channel, not a video.' };
+    if (u.pathname === '/results' || u.pathname === '/search') return { error: 'That’s a search page. Open the video you want and copy its link.' };
+    return { error: 'That isn’t a link to a single YouTube video.' };
+  }
+  if (!YT_ID_RE.test(id)) return { error: 'That video ID doesn’t look right (it should be 11 characters).' };
+  return { id, note: u.searchParams.get('list') ? 'The playlist part of the link was removed; only this video is kept.' : '' };
+}
+
+function ytReview() {
+  if (!db.youtubeReview) db.youtubeReview = { runAt: new Date().toISOString(), scope: ytScopeLabel(), results: [], remaining: [] };
+  return db.youtubeReview;
+}
+function ytRowFor(id) {
+  const rv = ytReview();
+  let r = rv.results.find((x) => x.trackId === id);
+  if (!r) { r = { trackId: id, outcome: 'none' }; rv.results.push(r); }
+  return r;
+}
+// kind: 'link' (with a video id) or 'none' (no YouTube version; keeps a search link).
+function ytSetManual(t, kind, id) {
+  const before = t.youtubeManual ? t.youtubeManual.previousUrl : t.youtubeUrl;
+  const prevResolved = t.youtubeManual ? t.youtubeManual.prevResolved : t.youtubeResolved;
+  const r = ytRowFor(t.id);
+  if (r.outcome !== 'manual') r.prevOutcome = r.outcome;
+  t.youtubeManual = { kind, at: new Date().toISOString(), previousUrl: before };
+  if (prevResolved) t.youtubeManual.prevResolved = prevResolved;
+  t.youtubeUrl = kind === 'link' ? ytWatchUrl(id) : (ytVideoId(t.youtubeUrl) ? youtubeSearchUrl(t.artist, t.song) : t.youtubeUrl);
+  delete t.youtubeResolved;
+  r.outcome = 'manual';
+}
+// Undo: the link that was there before your first manual change; the marker is removed.
+function ytUndoManual(t) {
+  if (!t.youtubeManual) return;
+  t.youtubeUrl = t.youtubeManual.previousUrl || youtubeSearchUrl(t.artist, t.song);
+  if (t.youtubeManual.prevResolved) t.youtubeResolved = t.youtubeManual.prevResolved;
+  delete t.youtubeManual;
+  const r = ytRowFor(t.id);
+  r.outcome = r.prevOutcome && r.prevOutcome !== 'manual' ? r.prevOutcome : (ytVideoId(t.youtubeUrl) ? 'approved' : 'cleared');
+}
+// Clear link / Reset to automatic: back to a search link, marker removed, searched again next run.
+function ytResetAuto(t) {
+  t.youtubeUrl = youtubeSearchUrl(t.artist, t.song);
+  delete t.youtubeManual;
+  delete t.youtubeResolved;
+  ytRowFor(t.id).outcome = 'cleared';
+}
+
+// ---------- edit panel ----------
+let ytEdit = { trackId: null, value: '', parsed: null, seq: 0, info: null };
+function ytOpenEdit(id) { ytEdit = { trackId: id, value: '', parsed: null, seq: ytEdit.seq + 1, info: null }; }
+function ytEditPanelHtml(t) {
+  const has = ytVideoId(t.youtubeUrl);
+  return '<div class="yte" data-yte="' + t.id + '">' +
+    '<label class="small" for="yte-input">Paste a YouTube link or video ID</label>' +
+    '<input type="text" id="yte-input" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://www.youtube.com/watch?v=…" value="' + escapeHtml(ytEdit.value) + '">' +
+    '<div class="yte-msg small" id="yte-msg" role="status">' + ytEditMsgHtml() + '</div>' +
+    '<div class="yte-prev" id="yte-prev">' + ytPreviewHtml() + '</div>' +
+    ytOthersHtml(t) +
+    '<div class="row yte-actions">' +
+      '<button class="btn btn-indigo btn-sm" data-yt="e-save"' + (ytEdit.parsed && ytEdit.parsed.id ? '' : ' disabled') + '>Save</button>' +
+      '<button class="btn btn-outline btn-sm" data-yt="e-next"' + (ytEdit.parsed && ytEdit.parsed.id ? '' : ' disabled') + '>Save &amp; next</button>' +
+      '<button class="btn btn-soft btn-sm" data-yt="e-cancel">Cancel</button>' +
+      (has || t.youtubeManual ? '<button class="btn btn-soft btn-sm" data-yt="e-clear">Clear link</button>' : '') +
+      '<button class="btn btn-soft btn-sm" data-yt="e-none">No YouTube version</button>' +
+    '</div></div>';
+}
+function ytEditMsgHtml() {
+  const p = ytEdit.parsed;
+  if (!p) return '<span class="muted">Watch, youtu.be, music.youtube.com and Shorts links, or an 11-character video ID.</span>';
+  if (p.error) return '<span class="yte-err">' + escapeHtml(p.error) + '</span>';
+  return '<span class="yte-ok">' + icon('checkCircle') + 'Video ' + escapeHtml(p.id) + '</span>' + (p.note ? ' <span class="muted">' + escapeHtml(p.note) + '</span>' : '');
+}
+function ytPreviewHtml() {
+  const p = ytEdit.parsed;
+  if (!p || !p.id) return '';
+  const i = ytEdit.info;
+  const open = '<a class="small" href="https://www.youtube.com/watch?v=' + p.id + '" target="_blank" rel="noopener noreferrer">Open on YouTube ↗</a>';
+  return '<img src="https://i.ytimg.com/vi/' + p.id + '/mqdefault.jpg" alt="" width="160" height="90" loading="lazy">' +
+    '<div class="yte-info">' + (
+      !i ? '<span class="muted small">Looking up the title…</span>'
+      : i.missing ? '<span class="yte-err small">YouTube says this video doesn’t exist or is private. You can still save it.</span>'
+      : i.error ? '<span class="muted small">Couldn’t load the title.</span>'
+      : '<b>' + escapeHtml(i.title) + '</b><span class="muted small">' + escapeHtml(i.channel) + '</span>') + open + '</div>';
+}
+async function ytLookup() {
+  const p = ytEdit.parsed, seq = ++ytEdit.seq;
+  if (!p || !p.id) return;
+  try {
+    const res = await fetch('https://www.youtube.com/oembed?format=json&url=' + encodeURIComponent('https://www.youtube.com/watch?v=' + p.id));
+    if (seq !== ytEdit.seq) return;
+    if (res.status === 404 || res.status === 400) ytEdit.info = { missing: true };
+    else if (!res.ok) ytEdit.info = { title: 'YouTube video ' + p.id, channel: 'Title not available (HTTP ' + res.status + ')' };
+    else { const d = await res.json(); ytEdit.info = { title: d.title || 'YouTube video', channel: d.author_name || '' }; }
+  } catch (e) { if (seq === ytEdit.seq) ytEdit.info = { error: true }; }
+  if (seq === ytEdit.seq && $('#yte-prev')) $('#yte-prev').innerHTML = ytPreviewHtml();
+}
+function ytOnInput(el) {
+  ytEdit.value = el.value;
+  const p = ytParseInput(el.value);
+  ytEdit.parsed = el.value.trim() ? p : null;
+  ytEdit.info = null;
+  $('#yte-msg').innerHTML = ytEditMsgHtml();
+  $('#yte-prev').innerHTML = ytPreviewHtml();
+  document.querySelectorAll('[data-yt="e-save"], [data-yt="e-next"]').forEach((b) => { b.disabled = !(p && p.id); });
+  if (p && p.id) ytLookup(); else ytEdit.seq++;
+}
+// The order rows are listed in, so "Save & next" can move to the next one that still needs a link.
+let ytRowOrder = [];
+function ytNextAfter(id) {
+  const i = ytRowOrder.indexOf(id);
+  const rest = ytRowOrder.slice(i + 1).concat(ytRowOrder.slice(0, Math.max(0, i)));
+  return rest.find((x) => { const t = trackById(x); return t && !ytVideoId(t.youtubeUrl) && !t.youtubeManual; }) || null;
+}
+function ytEditAction(act, t) {
+  if (act === 'edit') { ytOpenEdit(t.id); return 'focus'; }
+  if (act === 'e-cancel') { ytEdit.trackId = null; return; }
+  const targets = [t].concat(ytOtherTargets(t));
+  const rvNow = db.youtubeReview ? db.youtubeReview.results : [];
+  if (/^e-(save|next|none)$/.test(act)) targets.forEach((x) => { if (!ytJustSet.has(x.id)) { const r = rvNow.find((y) => y.trackId === x.id); ytJustSet.set(x.id, r ? r.outcome : ''); } });
+  if (act === 'e-save' || act === 'e-next') {
+    const p = ytEdit.parsed;
+    if (!p || !p.id) return;
+    targets.forEach((x) => ytSetManual(x, 'link', p.id));
+    toast('Saved' + (targets.length > 1 ? ' for ' + targets.length + ' plays' : '') + ': set by you', 'ok');
+    const next = act === 'e-next' ? ytNextAfter(t.id) : null;
+    if (next) { ytOpenEdit(next); return 'focus'; }
+    ytEdit.trackId = null;
+    if (act === 'e-next') toast('No more tracks need a link here.');
+    return;
+  }
+  if (act === 'e-none') { targets.forEach((x) => ytSetManual(x, 'none')); ytEdit.trackId = null; toast('Marked: no YouTube version (set by you)', 'ok'); return; }
+  if (act === 'e-clear' || act === 'm-reset') { ytResetAuto(t); ytEdit.trackId = null; toast('Back to automatic: the next run may search this track.'); return; }
+  if (act === 'm-undo') { ytUndoManual(t); ytEdit.trackId = null; return; }
+}
+// ---------- manual mode (no key, no searches) ----------
+// Per device: on by default when this device has no YouTube key; the choice is remembered here only.
+function ytManualMode() {
+  try { const v = localStorage.getItem(STORE_KEY + '.ytManualMode'); if (v === '1') return true; if (v === '0') return false; } catch (e) { /* storage blocked */ }
+  return !db.settings.youtubeApiKey;
+}
+function ytSetManualMode(on) { try { localStorage.setItem(STORE_KEY + '.ytManualMode', on ? '1' : '0'); } catch (e) { /* storage blocked */ } }
+let ytMf = 'needs', ytMLimit = 50;
+const ytJustSet = new Map();   // tracks set in this visit -> the status they had, so they stay in view with Undo
+const YT_MF = {
+  needs: { label: 'Needs a link', test: (t, o) => !ytVideoId(t.youtubeUrl) && !t.youtubeManual },
+  skipped: { label: 'Skipped', test: (t, o) => o === 'skipped' },
+  none: { label: 'No match', test: (t, o) => o === 'none' },
+  mine: { label: 'Set by you', test: (t) => !!t.youtubeManual },
+  all: { label: 'All', test: () => true }
+};
+function ytManualHtml(rv) {
+  const out = new Map(((rv && rv.results) || []).map((r) => [r.trackId, r.outcome]));
+  const scope = rsScopeTracks();
+  const f = YT_MF[ytMf] ? ytMf : 'needs';
+  const inF = (k, t) => YT_MF[k].test(t, out.get(t.id)) || (k !== 'mine' && k !== 'all' && ytJustSet.has(t.id) && (k === 'needs' || ytJustSet.get(t.id) === k));
+  const list = scope.filter((t) => inF(f, t));
+  ytRowOrder = list.map((t) => t.id);
+  const at = ytEdit.trackId ? ytRowOrder.indexOf(ytEdit.trackId) : -1;
+  if (at >= ytMLimit) ytMLimit = Math.ceil((at + 1) / 50) * 50;
+  let html = '<div class="chips yt-filters" role="group" aria-label="Show">' + Object.keys(YT_MF).map((k) =>
+    '<button class="yt-f' + (k === f ? ' active' : '') + '" data-ytf="' + k + '" aria-pressed="' + (k === f) + '">' + YT_MF[k].label +
+    ' <b>' + scope.filter((t) => YT_MF[k].test(t, out.get(t.id))).length + '</b></button>').join('') + '</div>';
+  const waiting = ((rv && rv.results) || []).filter((r) => r.outcome === 'review' && trackById(r.trackId)).length;
+  if (waiting) html += '<p class="small muted">' + waiting + ' suggestion' + (waiting === 1 ? '' : 's') + ' from earlier searches wait for your review: turn off manual mode to see ' + (waiting === 1 ? 'it' : 'them') + '.</p>';
+  if (!list.length) return html + '<p class="muted small">' + (f === 'needs' ? 'Every track in this scope has a YouTube link or was set by you.' : 'No tracks here in this scope.') + '</p>';
+  const yourLink = (t) => ytVideoId(t.youtubeUrl) ? '<div class="t small">→ <a href="' + escapeHtml(t.youtubeUrl) + '" target="_blank" rel="noopener noreferrer">' + (t.youtubeManual ? 'Your link' : 'Current link') + ': video ' + escapeHtml(ytVideoId(t.youtubeUrl)) + ' ↗</a></div>' : '';
+  html += '<ul class="mini-list">' + list.slice(0, ytMLimit).map((t) =>
+    '<li data-track="' + t.id + '"><div class="t">' + trackLine(t) + '</div>' + yourLink(t) + ytRowActions(t) + ytSearchLink(t) +
+    (ytEdit.trackId === t.id ? ytEditPanelHtml(t) : '') + '</li>').join('') + '</ul>';
+  if (list.length > ytMLimit) html += '<button class="btn btn-soft btn-sm" id="yt-more">Show ' + Math.min(50, list.length - ytMLimit) + ' more (' + (list.length - ytMLimit) + ' not shown)</button>';
+  return html;
+}
+
+// ---------- other plays of the same song ----------
+// Same artist + song (apostrophes ignored), anywhere in the library, with no direct link and not set by you.
+function ytOtherPlays(t) {
+  const k = spKey(t.artist, t.song);
+  return db.tracks.filter((x) => x.id !== t.id && !ytVideoId(x.youtubeUrl) && !x.youtubeManual && spKey(x.artist, x.song) === k);
+}
+function ytOthersHtml(t) {
+  const n = ytOtherPlays(t).length;
+  if (!n) return '';
+  return '<label class="rs-yt"><input type="checkbox" id="yte-others" checked><span>Also use for ' + n + ' other play' + (n === 1 ? '' : 's') +
+    ' of this song that ' + (n === 1 ? 'has' : 'have') + ' no YouTube link yet</span></label>';
+}
+function ytOtherTargets(t) {
+  const cb = $('#yte-others');
+  return cb && cb.checked ? ytOtherPlays(t) : [];
+}
+
+function ytRowActions(t) {
+  const has = ytVideoId(t.youtubeUrl);
+  return (t.youtubeManual ? '<span class="yt-mine">' + (t.youtubeManual.kind === 'none' ? 'Set by you: no YouTube version' : 'Set by you') + '</span>' +
+      '<button class="btn btn-soft btn-sm" data-yt="m-undo" title="Go back to the link before your change">Undo</button>' +
+      '<button class="btn btn-soft btn-sm" data-yt="m-reset" title="Clear the link so the next run may search it">Reset to automatic</button>' : '') +
+    '<button class="btn btn-outline btn-sm" data-yt="edit">' + (has ? 'Edit link' : 'Set link') + '</button>';
+}
+const ytSearchLink = (t) => '<a class="btn btn-soft btn-sm" data-yt-search="' + t.id + '" href="' + escapeHtml(safeUrl(ytVideoId(t.youtubeUrl) || t.youtubeManual ? youtubeSearchUrl(t.artist, t.song) : t.youtubeUrl)) + '" target="_blank" rel="noopener noreferrer">Search YouTube ↗</a>';
+
 function ytHandleClick(btn) {
+  if (btn.dataset.ytf) { ytMf = btn.dataset.ytf; ytMLimit = 50; ytEdit.trackId = null; renderResolve(); return; }
+  if (btn.id === 'yt-more') { ytMLimit += 50; renderResolve(); return; }
   if (btn.id === 'yt-run') { ytRun(); return; }
   if (btn.id === 'yt-resume') { ytRun(db.youtubeReview.remaining.slice()); return; }
   if (btn.id === 'yt-cancel') { ytState.cancel = true; return; }
   if (btn.id === 'yt-connect') { $('#resolve-modal').classList.remove('open'); openConnections(); ccOpenSection('yt-connection'); setTimeout(() => $('#yt-connection').scrollIntoView({ block: 'start' }), 120); return; }
   const holder = btn.closest('[data-track]');
   const act = btn.dataset.yt;
+  if (holder && act && /^(edit|e-|m-)/.test(act)) {
+    const t = trackById(holder.dataset.track);
+    if (!t) return;
+    const res = ytEditAction(act, t);
+    if (!/^(edit|e-cancel)$/.test(act)) saveDb();
+    renderAll();
+    renderResolve();
+    if (res === 'focus') { const i = $('#yte-input'); if (i) { i.focus({ preventScroll: true }); i.closest('[data-track]').scrollIntoView({ block: 'center' }); } }
+    return;
+  }
   if (!holder || !act || !db.youtubeReview) return;
   const r = db.youtubeReview.results.find((x) => x.trackId === holder.dataset.track);
   const t = trackById(holder.dataset.track);
