@@ -412,6 +412,27 @@
   .playlist-card summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px; padding: 12px 14px; flex-wrap: wrap; }
   .playlist-card summary::-webkit-details-marker { display: none; }
   .playlist-card summary .name { font-weight: 700; flex: 1; min-width: 140px; }
+  .playlist-card .pl-grip { color: var(--faint); cursor: grab; letter-spacing: -2px; font-weight: 800; padding: 0 2px; user-select: none; }
+  .playlist-card .pl-move { display: inline-flex; gap: 4px; margin-left: auto; }
+  .playlist-card .pl-move .icon-btn[disabled] { opacity: 0.35; cursor: default; }
+  .playlist-card.dragging { opacity: 0.5; }
+  .playlist-card.drop-before { box-shadow: 0 -3px 0 var(--indigo); }
+  .playlist-card.drop-after { box-shadow: 0 3px 0 var(--indigo); }
+  #pl-target { width: auto; flex: 0 1 200px; min-width: 0; }
+  .ct-panel details > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .ct-panel details > summary::-webkit-details-marker { display: none; }
+  .ct-panel details > summary h2 { margin: 0; }
+  .ct-panel details > summary::after { content: '▾'; margin-left: auto; color: var(--muted); }
+  .ct-panel details[open] > summary::after { content: '▴'; }
+  .ct-panel .lead { margin-top: 10px; }
+  .ct-filters { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; margin: 10px 0; align-items: center; }
+  .ct-list { list-style: none; border-top: 1px solid var(--border); max-height: 420px; overflow-y: auto; margin: 0 0 8px; }
+  .ct-list li { border-bottom: 1px solid #eef1f5; }
+  .ct-list li.pl-member { box-shadow: inset 3px 0 0 var(--amber); }
+  .ct-list label { display: flex; gap: 10px; align-items: flex-start; padding: 8px 6px; cursor: pointer; font-size: 0.88rem; }
+  .ct-list input { width: 18px; height: 18px; flex: none; margin-top: 1px; accent-color: var(--indigo); }
+  .ct-list .meta { display: block; color: var(--muted); font-size: 0.78rem; }
+  .ct-list li.empty { padding: 12px 6px; color: var(--muted); }
   .playlist-card .body { padding: 0 14px 14px; }
   .playlist-card ol { margin: 4px 0 10px 22px; font-size: 0.86rem; color: var(--muted); }
   .playlist-card ol li span { color: var(--text); }
@@ -457,7 +478,11 @@
   /* In-app player dock (Spotify iFrame API / YouTube IFrame Player API) */
   .player-dock { position: fixed; left: 16px; bottom: 16px; z-index: 880; width: 400px; max-width: calc(100vw - 32px); background: var(--card); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 18px 44px rgba(15, 23, 42, 0.22); overflow: hidden; }
   .player-dock[hidden] { display: none; }
-  .pd-head { display: flex; align-items: center; gap: 8px; padding: 8px 8px 8px 12px; border-bottom: 1px solid var(--border); }
+  .pd-head { display: flex; align-items: center; gap: 8px; padding: 8px 8px 8px 12px; border-bottom: 1px solid var(--border); cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
+  .pd-head a, .pd-head button { cursor: pointer; }
+  .player-dock.dragging { box-shadow: 0 24px 60px rgba(15, 23, 42, 0.32); }
+  .player-dock.dragging .pd-head { cursor: grabbing; }
+  .player-dock.dragging iframe { pointer-events: none; }
   .pd-head .ico { font-size: 1.05rem; flex: none; }
   .pd-head .pd-src.sp { color: var(--spotify); } .pd-head .pd-src.yt { color: var(--yt); }
   .pd-title { flex: 1; min-width: 0; font-size: 0.82rem; line-height: 1.25; }
@@ -520,6 +545,17 @@
   .stream.sp.playing::after { background: var(--spotify-text); }
   .stream.yt.playing::after { background: var(--yt-text); }
   body.has-dock main.container { padding-bottom: calc(140px + var(--dock-h, 0px)); }
+  body.has-dock { padding-top: var(--dock-top-h, 0px); }
+  .selbar-add { position: relative; }
+  .selbar .add { background: #fff; color: #0f172a; }
+  .selbar-menu { position: absolute; bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%); min-width: 240px; max-width: calc(100vw - 32px); max-height: min(60vh, 360px); overflow-y: auto;
+    background: var(--card); color: var(--text); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 14px 36px rgba(15, 23, 42, 0.25); padding: 6px; display: grid; gap: 2px; }
+  .selbar-menu[hidden] { display: none; }
+  .selbar-menu button { display: flex; justify-content: space-between; gap: 12px; width: 100%; text-align: left; background: transparent; color: var(--text); border-radius: 8px; padding: 10px 12px; font-weight: 600; white-space: normal; }
+  .selbar-menu button:hover, .selbar-menu button:focus-visible { background: var(--pill); }
+  .selbar-menu button .n { color: var(--muted); font-weight: 600; flex: none; }
+  .selbar-menu button.new { color: var(--indigo); border-top: 1px solid var(--border); border-radius: 0 0 8px 8px; margin-top: 2px; }
+  .selbar-menu .empty { padding: 10px 12px; color: var(--muted); font-weight: 500; font-size: 0.85rem; }
   .selbar {
     position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 900; display: flex; align-items: center; gap: 12px;
     background: #0f172a; color: #fff; border-radius: 999px; padding: 8px 8px 8px 18px; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.25);
@@ -604,7 +640,8 @@
     .tabs { flex: 1 1 100%; }
     .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .metric.wide-when-paired { grid-column: 1 / -1; } /* the 5th card fills the last row when cards sit two per row */
-    .two-col { grid-template-columns: 1fr; }
+    .two-col { grid-template-columns: minmax(0, 1fr); }
+    .in-pl .pl-chip { white-space: normal; max-width: 100%; }
   }
   @media (max-width: 760px) {
     body { font-size: 14px; }
@@ -681,6 +718,11 @@
     .live-list .stream { margin: 2px 6px 2px 0; }
     .selbar { bottom: 12px; font-size: 0.85rem; white-space: nowrap; }
     .player-dock { left: 0; right: 0; bottom: 0; width: 100%; max-width: none; border-radius: 14px 14px 0 0; border-bottom: none; }
+    .player-dock.at-top { top: 0; bottom: auto; border-radius: 0 0 14px 14px; border-bottom: 1px solid var(--border); border-top: none; }
+    .playlist-card .pl-grip { display: none; }
+    .ct-filters { grid-template-columns: 1fr 1fr; }
+    .ct-filters input { grid-column: span 2; }
+    #pl-target { flex: 1 1 100%; }
     .pd-btn { width: 40px; height: 40px; }
     .pd-queue .pd-btn { width: 36px; height: 36px; }
     .yte-prev { align-items: flex-start; }
@@ -692,6 +734,8 @@
     .pq-ctrls { gap: 4px; }
     .pd-open { padding: 6px 10px; }
     .selbar .long { display: none; }
+    .selbar { gap: 6px; padding: 6px 6px 6px 14px; }
+    .selbar button { padding: 8px 11px; }
     .toast-wrap { bottom: 74px; }
 
     /* Phone fixes: these need the same specificity as "table.tracks td" above. */
@@ -905,13 +949,32 @@
 
   <!-- ===================== PLAYLIST CREATOR ===================== -->
   <section class="view" id="view-creator" hidden>
+    <div class="card panel ct-panel">
+      <details id="ct-box" open>
+        <summary><h2><span class="ico" data-icon="search"></span>Find tracks</h2><span class="muted small" id="ct-summary"></span></summary>
+        <p class="lead">The same search and filters as Song Explorer. Tick a track to add it to the current selection.</p>
+        <div class="ct-filters">
+          <input type="search" id="ct-artist" placeholder="Artist…" aria-label="Find by artist" autocomplete="off">
+          <input type="search" id="ct-song" placeholder="Song title…" aria-label="Find by song title" autocomplete="off">
+          <select id="ct-date" aria-label="Show date"></select>
+          <select id="ct-source" aria-label="Source"></select>
+          <select id="ct-type" aria-label="Track type"></select>
+          <select id="ct-status" aria-label="Link status"></select>
+          <select id="ct-inpl" aria-label="Playlist membership"></select>
+          <button type="button" class="btn btn-soft btn-sm" id="ct-reset">Clear filters</button>
+        </div>
+        <ul class="ct-list" id="ct-list"></ul>
+        <button type="button" class="btn btn-soft btn-sm" id="ct-more" hidden></button>
+      </details>
+    </div>
     <div class="two-col">
       <div class="card panel">
         <h2><span class="ico" data-icon="radio"></span>Current selection <span class="stat blue" id="creator-count">0 tracks</span></h2>
         <p class="lead" id="builder-empty">Tick tracks in Song Explorer or Live Sessions &amp; Artists to add them here.</p>
         <ol class="builder-list" id="builder-list"></ol>
         <div class="row">
-          <input type="text" id="pl-name" placeholder="Playlist name" style="flex:1 1 220px; width:auto">
+          <select id="pl-target" aria-label="Save to" title="Save to a new playlist, or add to one you already have"><option value="">New playlist</option></select>
+          <input type="text" id="pl-name" placeholder="Playlist name" aria-label="New playlist name" style="flex:1 1 220px; width:auto">
           <button class="btn btn-indigo" id="btn-save-pl">Save playlist</button>
         </div>
         <div class="row" style="margin-top:10px">
@@ -994,7 +1057,11 @@
 
 <div class="selbar" id="selbar" hidden>
   <span id="selbar-text">0 selected</span>
-  <button class="go" id="selbar-go">Open <span class="long">Playlist </span>Creator →</button>
+  <div class="selbar-add">
+    <button type="button" class="add" id="selbar-add" aria-haspopup="menu" aria-expanded="false">Add<span class="long"> to playlist</span> ▾</button>
+    <div class="selbar-menu" id="selbar-menu" role="menu" aria-label="Add the selection to a playlist" hidden></div>
+  </div>
+  <button class="go" id="selbar-go"><span class="long">Open Playlist </span>Creator →</button>
   <button class="clear" id="selbar-clear">Clear</button>
 </div>
 
@@ -1746,7 +1813,8 @@ function commitImport() {
     show.archiveTotal = u.archiveTotal;
     notesApplied++;
   }
-  db.playlists.push(...plan.newPlaylists);
+  plEnsureOrder();
+  db.playlists.unshift(...plan.newPlaylists);
   saveDb();
   pendingImport = null;
   $('#import-preview').innerHTML = '';
@@ -2059,6 +2127,7 @@ function itemLabel(item) {
 }
 
 function renderCreator() {
+  plEnsureOrder();
   const sel = db.selection.map(trackById).filter(Boolean);
   $('#builder-empty').style.display = sel.length ? 'none' : '';
   $('#creator-count').textContent = sel.length + ' track' + (sel.length === 1 ? '' : 's');
@@ -2074,17 +2143,22 @@ function renderCreator() {
   $('#pq-resume-sel').innerHTML = pqResumeHtml('sel');
   $('#export-text').value = sel.map((t) => t.artist + ' - ' + t.song).join('\n');
   $('#btn-save-pl').disabled = !sel.length;
+  renderSaveTarget();
+  renderCreatorBrowser();
 
   const box = $('#saved-playlists');
   const keepOpen = new Set([...box.querySelectorAll('.playlist-card[open]')].map((c) => c.dataset.id));
   if (!db.playlists.length) { box.innerHTML = '<p class="lead">No saved playlists yet.</p>'; pqRender(); return; }
-  const sorted = db.playlists.slice().sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
-  box.innerHTML = sorted.map((p) => {
+  const last = db.playlists.length - 1;
+  box.innerHTML = db.playlists.map((p, i) => {
     const unmatched = p.items.filter((i) => !i.trackId).length;
     return '<details class="playlist-card" data-id="' + p.id + '"' + (keepOpen.has(p.id) ? ' open' : '') + '><summary>' +
+      '<span class="pl-grip" title="Drag to reorder" aria-hidden="true">⋮⋮</span>' +
       '<span class="name">' + escapeHtml(p.name) + '</span>' +
       '<span class="muted small">' + p.items.length + ' tracks · ' + escapeHtml(p.createdAt ? labelFromIso(p.createdAt) : '') + '</span>' +
       (unmatched ? '<span class="badge-amber">' + unmatched + ' text-only</span>' : '') +
+      '<span class="pl-move"><button type="button" class="icon-btn" data-pl="up" aria-label="Move ' + escapeHtml(p.name) + ' up"' + (i === 0 ? ' disabled' : '') + '>' + icon('up') + '</button>' +
+      '<button type="button" class="icon-btn" data-pl="down" aria-label="Move ' + escapeHtml(p.name) + ' down"' + (i === last ? ' disabled' : '') + '>' + icon('down') + '</button></span>' +
       '</summary><div class="body"><ol>' + p.items.map((it) => {
         const l = itemLabel(it);
         return '<li' + (l.track ? ' data-id="' + l.track.id + '"' : '') + '><span>' + escapeHtml(l.artist) + ' – ' + escapeHtml(l.song) +
@@ -2101,10 +2175,19 @@ function renderCreator() {
 }
 
 function savePlaylist() {
+  if (!db.selection.length) return;
+  const target = $('#pl-target').value;
+  if (target) { plAddSelection(target); return; }
   const name = $('#pl-name').value.trim();
   if (!name) { toast('Give the playlist a name first.', 'error'); $('#pl-name').focus(); return; }
-  if (!db.selection.length) return;
-  db.playlists.push({ id: newId('p'), name, createdAt: todayIso(), origin: 'Playlist Creator', items: db.selection.map((id) => ({ trackId: id })) });
+  const same = db.playlists.find((p) => plNameKey(p.name) === plNameKey(name));
+  if (same) {
+    toast('You already have a playlist called "' + same.name + '". To add these tracks to it, choose it under "Save to". Or type a different name.', 'error');
+    $('#pl-name').focus();
+    return;
+  }
+  plEnsureOrder();
+  db.playlists.unshift({ id: newId('p'), name, createdAt: todayIso(), origin: 'Playlist Creator', items: db.selection.map((id) => ({ trackId: id })) });
   saveDb();
   $('#pl-name').value = '';
   renderCreator();
@@ -2448,6 +2531,14 @@ $('#saved-playlists').addEventListener('click', async (e) => {
   const p = db.playlists.find((x) => x.id === card.dataset.id);
   if (!p) return;
   const act = btn.dataset.pl;
+  if (act === 'up' || act === 'down') {
+    e.preventDefault();
+    const i = db.playlists.indexOf(p);
+    plMove(p.id, act === 'up' ? i - 1 : i + 1);
+    const again = document.querySelector('.playlist-card[data-id="' + CSS.escape(p.id) + '"] [data-pl="' + act + '"]');
+    if (again && !again.disabled) again.focus(); else { const other = document.querySelector('.playlist-card[data-id="' + CSS.escape(p.id) + '"] [data-pl]:not([disabled])'); if (other) other.focus(); }
+    return;
+  }
   if (act === 'load') {
     db.selection = p.items.map((i) => i.trackId).filter((id) => id && trackById(id));
     afterSelectionChange();
@@ -2466,6 +2557,188 @@ $('#saved-playlists').addEventListener('click', async (e) => {
 $('#btn-backup').addEventListener('click', backup);
 $('#restore-file').addEventListener('change', (e) => { restore(e.target.files[0]); e.target.value = ''; });
 $('#btn-wipe').addEventListener('click', wipe);
+
+/* =========================================================
+   Saved playlists: your order, adding to an existing one, no duplicate names
+   ========================================================= */
+// The Saved Playlists panel, the "Save to" list and the selection bar's "Add to playlist" all use
+// db.playlists in array order (top first). Libraries saved before this showed newest first; that
+// order is taken over once, so nothing moves on screen.
+function plEnsureOrder() {
+  if (db.playlistOrder === 'manual') return;
+  db.playlists = db.playlists.slice().sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+  db.playlistOrder = 'manual';
+}
+// Names that differ only by case or spacing are the same name.
+const plNameKey = (s) => String(s || '').trim().replace(/\s+/g, ' ').toLowerCase();
+// Adds library tracks to a saved playlist, at the end, in the order given. A track is skipped when the
+// playlist already has it, or has a text-only entry with the same artist and song.
+function plAddTracks(p, ids) {
+  const have = new Set(p.items.filter((i) => i.trackId).map((i) => i.trackId));
+  const textKeys = new Set(p.items.filter((i) => !i.trackId).map((i) => spKey(i.artist, i.song)));
+  const out = { added: 0, already: 0, asText: 0 };
+  ids.forEach((id) => {
+    const t = trackById(id);
+    if (!t) return;
+    if (have.has(id)) { out.already++; return; }
+    if (textKeys.has(spKey(t.artist, t.song))) { out.asText++; return; }
+    p.items.push({ trackId: id });
+    have.add(id);
+    out.added++;
+  });
+  return out;
+}
+function plAddSummary(p, r) {
+  const n = (k, one, many) => k + ' ' + (k === 1 ? one : many);
+  if (!r.added) return 'Nothing added: ' + [r.already ? n(r.already, 'track is', 'tracks are') + ' already in "' + p.name + '"' : '',
+    r.asText ? n(r.asText, 'matches a text-only entry', 'match text-only entries') + ' already in it' : ''].filter(Boolean).join('; ') + '.';
+  return 'Added ' + n(r.added, 'track', 'tracks') + ' to "' + p.name + '"' +
+    (r.already ? '; ' + r.already + ' ' + (r.already === 1 ? 'was' : 'were') + ' already there' : '') +
+    (r.asText ? '; ' + n(r.asText, 'matched a text-only entry', 'matched text-only entries') + ' already in it' : '') + '.';
+}
+// Adds the current selection to a saved playlist and tells you what happened.
+function plAddSelection(id) {
+  const p = db.playlists.find((x) => x.id === id);
+  if (!p || !db.selection.length) return;
+  const r = plAddTracks(p, db.selection);
+  if (r.added) { saveDb(); renderCreator(); renderTable(); renderLive(); }
+  toast(plAddSummary(p, r), r.added ? 'ok' : '');
+}
+function plMove(id, to) {
+  const i = db.playlists.findIndex((x) => x.id === id);
+  if (i < 0 || to < 0 || to >= db.playlists.length || to === i) return;
+  const [p] = db.playlists.splice(i, 1);
+  db.playlists.splice(to, 0, p);
+  saveDb(); renderCreator(); renderTable(); renderLive();
+}
+function renderSaveTarget() {
+  const sel = $('#pl-target');
+  const keep = sel.value;
+  sel.innerHTML = '<option value="">New playlist</option>' + db.playlists.map((p) => '<option value="' + escapeHtml(p.id) + '">' + escapeHtml(p.name) + '</option>').join('');
+  sel.value = db.playlists.some((p) => p.id === keep) ? keep : '';
+  const existing = db.playlists.find((p) => p.id === sel.value);
+  $('#pl-name').hidden = !!existing;
+  $('#btn-save-pl').textContent = existing ? 'Add to "' + existing.name + '"' : 'Save playlist';
+}
+
+/* ---------- "Add to playlist" in the selection bar (Song Explorer and Live Sessions) ---------- */
+function renderSelbarMenu() {
+  $('#selbar-menu').innerHTML = (db.playlists.length
+    ? db.playlists.map((p) => '<button type="button" role="menuitem" data-add-pl="' + escapeHtml(p.id) + '"><span>' + escapeHtml(p.name) + '</span><span class="n">' + p.items.length + '</span></button>').join('')
+    : '<div class="empty">No saved playlists yet.</div>') +
+    '<button type="button" role="menuitem" class="new" data-add-pl="new">New playlist…</button>';
+}
+function setSelbarMenu(open) {
+  if (open) renderSelbarMenu();
+  $('#selbar-menu').hidden = !open;
+  $('#selbar-add').setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+$('#selbar-add').addEventListener('click', (e) => { e.stopPropagation(); setSelbarMenu($('#selbar-menu').hidden); });
+$('#selbar-menu').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-add-pl]');
+  if (!b) return;
+  setSelbarMenu(false);
+  if (b.dataset.addPl === 'new') { $('#selbar-go').click(); return; }
+  plAddSelection(b.dataset.addPl);
+});
+document.addEventListener('click', (e) => { if (!$('#selbar-menu').hidden && !e.target.closest('.selbar-add')) setSelbarMenu(false); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('#selbar-menu').hidden) { setSelbarMenu(false); $('#selbar-add').focus(); } });
+
+$('#pl-target').addEventListener('change', renderSaveTarget);
+
+/* ---------- Reordering saved playlists: arrows everywhere, drag by the handle on desktop ---------- */
+let plDragId = null;
+$('#saved-playlists').addEventListener('mousedown', (e) => { const g = e.target.closest('.pl-grip'); if (g) g.closest('.playlist-card').draggable = true; });
+$('#saved-playlists').addEventListener('dragstart', (e) => {
+  const card = e.target.closest('.playlist-card');
+  if (!card || !card.draggable) return;
+  plDragId = card.dataset.id;
+  e.dataTransfer.effectAllowed = 'move';
+  try { e.dataTransfer.setData('text/plain', plDragId); } catch (err) { /* some browsers need data set */ }
+  card.classList.add('dragging');
+});
+$('#saved-playlists').addEventListener('dragover', (e) => {
+  if (!plDragId) return;
+  const card = e.target.closest('.playlist-card');
+  e.preventDefault();
+  document.querySelectorAll('.playlist-card.drop-before, .playlist-card.drop-after').forEach((c) => c.classList.remove('drop-before', 'drop-after'));
+  if (!card || card.dataset.id === plDragId) return;
+  const r = card.getBoundingClientRect();
+  card.classList.add(e.clientY < r.top + r.height / 2 ? 'drop-before' : 'drop-after');
+});
+$('#saved-playlists').addEventListener('drop', (e) => {
+  if (!plDragId) return;
+  e.preventDefault();
+  const card = e.target.closest('.playlist-card');
+  const id = plDragId;
+  if (card && card.dataset.id !== id) {
+    const before = card.classList.contains('drop-before');
+    const from = db.playlists.findIndex((x) => x.id === id);
+    let to = db.playlists.findIndex((x) => x.id === card.dataset.id) + (before ? 0 : 1);
+    if (from < to) to--;
+    plMove(id, to);
+  }
+});
+$('#saved-playlists').addEventListener('dragend', () => {
+  plDragId = null;
+  document.querySelectorAll('.playlist-card').forEach((c) => { c.draggable = false; c.classList.remove('dragging', 'drop-before', 'drop-after'); });
+});
+
+/* =========================================================
+   Find tracks (Playlist Creator): the same matching as Song Explorer, with its own controls
+   ========================================================= */
+const CT_OPEN_KEY = STORE_KEY + '.ctOpen';
+let ctLimit = 50, ctTimer = null;
+function ctFilters() {
+  const inpl = $('#ct-inpl').value;
+  return { fa: norm($('#ct-artist').value), fs: norm($('#ct-song').value), date: $('#ct-date').value, type: $('#ct-type').value,
+    status: $('#ct-status').value, inpl, inplSet: inpl ? playlistTrackIds() : null, source: $('#ct-source').value };
+}
+function ctFilterOptions() {
+  const fill = (id, html) => { const s = $(id), keep = s.value; s.innerHTML = html; if ([...s.options].some((o) => o.value === keep)) s.value = keep; };
+  const dates = [...new Set(db.tracks.map((t) => t.showDate))].sort().reverse();
+  fill('#ct-date', '<option value="">All dates</option>' + dates.map((d) => '<option value="' + d + '">' + escapeHtml(labelFromIso(d)) + '</option>').join(''));
+  fill('#ct-source', '<option value="">All sources</option>' + SOURCES.filter((s) => db.tracks.some((t) => t.source === s)).map((s) => '<option value="' + escapeHtml(s) + '">' + escapeHtml(s) + '</option>').join(''));
+  // Type, link status and playlist choices are copied from Song Explorer's own lists, so the two never differ.
+  [['#ct-type', '#f-type'], ['#ct-status', '#f-status'], ['#ct-inpl', '#f-inpl']].forEach(([to, from]) => fill(to, $(from).innerHTML));
+}
+function renderCreatorBrowser() {
+  if (!$('#ct-box').open) return;
+  ctFilterOptions();
+  const f = ctFilters();
+  const sel = new Set(db.selection);
+  const list = db.tracks.filter((t) => (!f.source || t.source === f.source) && passesFilters(t, f))
+    .sort((a, b) => b.showDate.localeCompare(a.showDate) || String(a.airTime || '').localeCompare(String(b.airTime || '')) || (a.position || 0) - (b.position || 0));
+  const shown = list.slice(0, ctLimit);
+  const ticked = list.filter((t) => sel.has(t.id)).length;
+  $('#ct-summary').textContent = list.length + ' track' + (list.length === 1 ? '' : 's') + ' found' + (ticked ? ' · ' + ticked + ' in your selection' : '');
+  $('#ct-list').innerHTML = shown.map((t) =>
+    '<li data-id="' + t.id + '"' + (membershipFor(t.id).length ? ' class="pl-member"' : '') + '><label><input type="checkbox" class="ct-check"' + (sel.has(t.id) ? ' checked' : '') +
+    ' aria-label="Select ' + escapeHtml(t.song + ' by ' + t.artist) + '"><span class="t"><b>' + escapeHtml(t.song) + '</b> · ' + escapeHtml(t.artist) +
+    '<span class="meta">' + escapeHtml((t.showLabel || labelFromIso(t.showDate)) + ' · ' + t.source) + (t.type === LIVE ? ' · ★ live' : '') +
+    ' · ' + (t.linkStatus === VERIFIED ? 'Verified Direct' : 'Search Query') + '</span></span></label></li>').join('') ||
+    '<li class="empty">No tracks match these filters.</li>';
+  $('#ct-more').hidden = list.length <= ctLimit;
+  $('#ct-more').textContent = 'Show ' + Math.min(50, list.length - ctLimit) + ' more (' + (list.length - ctLimit) + ' not shown)';
+}
+const ctRefresh = () => { ctLimit = 50; renderCreatorBrowser(); };
+['#ct-artist', '#ct-song'].forEach((s) => $(s).addEventListener('input', () => { clearTimeout(ctTimer); ctTimer = setTimeout(ctRefresh, 150); }));
+['#ct-date', '#ct-source', '#ct-type', '#ct-status', '#ct-inpl'].forEach((s) => $(s).addEventListener('change', ctRefresh));
+$('#ct-reset').addEventListener('click', () => { ['#ct-artist', '#ct-song', '#ct-date', '#ct-source', '#ct-type', '#ct-status', '#ct-inpl'].forEach((s) => { $(s).value = ''; }); ctRefresh(); });
+$('#ct-more').addEventListener('click', () => { ctLimit += 50; renderCreatorBrowser(); });
+$('#ct-list').addEventListener('change', (e) => {
+  if (!e.target.classList.contains('ct-check')) return;
+  toggleSelect(e.target.closest('li').dataset.id, e.target.checked);
+  afterSelectionChange();
+});
+(function ctRestoreOpen() {
+  try { const v = localStorage.getItem(CT_OPEN_KEY); if (v === '0') $('#ct-box').open = false; } catch (e) { /* storage blocked */ }
+})();
+$('#ct-box').addEventListener('toggle', () => {
+  try { localStorage.setItem(CT_OPEN_KEY, $('#ct-box').open ? '1' : '0'); } catch (e) { /* storage blocked */ }
+  renderCreatorBrowser();
+});
+
 
 /* =========================================================
    Spotify: PKCE sign-in, link resolution, playlist export
@@ -5262,6 +5535,7 @@ function showDock(kind, t) {
   const dock = $('#player-dock');
   dock.hidden = false;
   document.body.classList.add('has-dock');
+  placeDock();
   $('#pd-src').className = 'pd-src ' + kind;
   $('#pd-src').innerHTML = icon(kind === 'sp' ? 'spotify' : 'ytmusic');
   $('#pd-song').textContent = t.song;
@@ -5322,11 +5596,17 @@ function markPlaying() {
 // enough bottom room that the last track can scroll clear of it.
 function updateDockOffsets() {
   const dock = $('#player-dock');
-  const open = !dock.hidden;
-  const r = open ? dock.getBoundingClientRect() : null;
+  const shown = !dock.hidden;
+  const r = shown ? dock.getBoundingClientRect() : null;
+  // The page makes room for the player only where it sits: along the bottom (the usual place),
+  // or along the top on a phone. A player moved elsewhere on a large screen floats over the page.
+  const open = shown && r.bottom >= dockArea().h - 24;
+  const top = shown && !open && dock.classList.contains('at-top');
   document.body.style.setProperty('--dock-h', open ? Math.ceil(r.height) + 'px' : '0px');
-  // Anything the app scrolls into view (Show list, jump links, centred rows) stays above the dock.
+  document.body.style.setProperty('--dock-top-h', top ? Math.ceil(r.height) + 'px' : '0px');
+  // Anything the app scrolls into view (Show list, jump links, centred rows) stays clear of the dock.
   document.documentElement.style.scrollPaddingBottom = open ? Math.ceil(r.height + 12) + 'px' : '';
+  document.documentElement.style.scrollPaddingTop = top ? Math.ceil(r.height + 12) + 'px' : '';
   ['#selbar', '#list-jump', '#toasts'].forEach((sel) => {
     const el = $(sel);
     if (!el) return;
@@ -5337,9 +5617,83 @@ function updateDockOffsets() {
     el.style.marginBottom = overlaps ? Math.ceil(r.height) + 'px' : '';
   });
 }
-window.addEventListener('resize', () => { if (!$('#player-dock').hidden) updateDockOffsets(); });
+window.addEventListener('resize', () => { if (!$('#player-dock').hidden) { placeDock(); updateDockOffsets(); } });
 new MutationObserver(() => { if (!$('#player-dock').hidden) updateDockOffsets(); }).observe($('#selbar'), { attributes: true, attributeFilter: ['hidden'] });
 ['#track-body', '#live-cards'].forEach((sel) => new MutationObserver(markPlaying).observe($(sel), { childList: true }));
+
+/* ---------- Moving the player ----------
+   Desktop: drag the top bar anywhere inside the window; the spot is remembered on this device,
+   and a double-click on the bar puts the player back at the bottom left.
+   Phone: drag the bar up or down to keep the player along the top or the bottom edge.
+   Only the player's position on screen changes; it is never rebuilt or moved in the page,
+   so playback carries on. */
+const DOCK_POS_KEY = STORE_KEY + '.dockPos';     // desktop: { x, y } of the top-left corner in pixels, plus right/bottom when it was left against that edge
+const DOCK_EDGE_KEY = STORE_KEY + '.dockEdge';   // phone: 'top' or 'bottom'
+const dockIsPhone = () => matchMedia('(max-width: 760px)').matches;
+// The visible page area (without a scroll bar), so the player never tucks under it.
+const dockArea = () => ({ w: document.documentElement.clientWidth || innerWidth, h: document.documentElement.clientHeight || innerHeight });
+function dockPref(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
+function dockSetPref(k, v) { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* storage unavailable */ } }
+// Puts the player where it was left, kept fully inside the window.
+function placeDock() {
+  const dock = $('#player-dock');
+  if (dock.hidden || dock.classList.contains('dragging')) return;
+  if (dockIsPhone()) {
+    dock.style.left = dock.style.top = dock.style.bottom = '';
+    dock.classList.toggle('at-top', dockPref(DOCK_EDGE_KEY) === 'top');
+    return;
+  }
+  dock.classList.remove('at-top');
+  const p = dockPref(DOCK_POS_KEY);
+  if (!p) { dock.style.left = dock.style.top = dock.style.bottom = ''; return; }
+  const r = dock.getBoundingClientRect(), a = dockArea();
+  // Left against the right or bottom edge, it stays there when the window or the player changes size.
+  const x = p.right ? a.w - r.width : p.x, y = p.bottom ? a.h - r.height : p.y;
+  dock.style.left = Math.round(Math.min(Math.max(0, x), Math.max(0, a.w - r.width))) + 'px';
+  dock.style.top = Math.round(Math.min(Math.max(0, y), Math.max(0, a.h - r.height))) + 'px';
+  dock.style.bottom = 'auto';
+}
+let dockDrag = null;
+$('#player-dock .pd-head').addEventListener('pointerdown', (e) => {
+  if (e.button !== 0 || e.target.closest('button, a')) return;
+  const dock = $('#player-dock'), r = dock.getBoundingClientRect();
+  dockDrag = { id: e.pointerId, dx: e.clientX - r.left, dy: e.clientY - r.top, x0: e.clientX, y0: e.clientY, moved: false, phone: dockIsPhone() };
+  e.currentTarget.setPointerCapture(e.pointerId);
+});
+$('#player-dock .pd-head').addEventListener('pointermove', (e) => {
+  if (!dockDrag || e.pointerId !== dockDrag.id) return;
+  const dock = $('#player-dock');
+  if (!dockDrag.moved) {
+    if (Math.abs(e.clientX - dockDrag.x0) + Math.abs(e.clientY - dockDrag.y0) < 5) return;
+    dockDrag.moved = true;
+    dock.classList.add('dragging');            // the players ignore the pointer while the player is moved
+  }
+  const r = dock.getBoundingClientRect(), a = dockArea();
+  const y = Math.min(Math.max(0, e.clientY - dockDrag.dy), Math.max(0, a.h - r.height));
+  if (!dockDrag.phone) dock.style.left = Math.round(Math.min(Math.max(0, e.clientX - dockDrag.dx), Math.max(0, a.w - r.width))) + 'px';
+  dock.style.top = Math.round(y) + 'px';
+  dock.style.bottom = 'auto';
+});
+function dockDragEnd(e) {
+  if (!dockDrag || e.pointerId !== dockDrag.id) return;
+  const d = dockDrag, dock = $('#player-dock');
+  dockDrag = null;
+  dock.classList.remove('dragging');
+  if (!d.moved) return;
+  const r = dock.getBoundingClientRect();
+  if (d.phone) dockSetPref(DOCK_EDGE_KEY, r.top + r.height / 2 < innerHeight / 2 ? 'top' : 'bottom');
+  else { const a = dockArea(); dockSetPref(DOCK_POS_KEY, { x: Math.round(r.left), y: Math.round(r.top), right: r.right >= a.w - 4, bottom: r.bottom >= a.h - 4 }); }
+  placeDock();
+  updateDockOffsets();
+}
+$('#player-dock .pd-head').addEventListener('pointerup', dockDragEnd);
+$('#player-dock .pd-head').addEventListener('pointercancel', dockDragEnd);
+$('#player-dock .pd-head').addEventListener('dblclick', (e) => {
+  if (e.target.closest('button, a') || dockIsPhone()) return;
+  dockSetPref(DOCK_POS_KEY, null);
+  placeDock();
+  updateDockOffsets();
+});
 
 // Plain clicks on direct links play in the dock; everything else behaves as before.
 document.addEventListener('click', (e) => {
@@ -5368,7 +5722,7 @@ document.addEventListener('click', (e) => {
 });
 $('#pd-close').addEventListener('click', closePlayer);
 $('#pd-min').addEventListener('click', () => setDockMin(!$('#player-dock').classList.contains('min')));
-new ResizeObserver(() => { if (!$('#player-dock').hidden) updateDockOffsets(); }).observe($('#player-dock'));
+new ResizeObserver(() => { if (!$('#player-dock').hidden) { placeDock(); updateDockOffsets(); } }).observe($('#player-dock'));
 
 /* =========================================================
    Out of the Box import (WHRO public archive). Episodes are read one at a time from
