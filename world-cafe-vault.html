@@ -311,6 +311,25 @@
   .c-actions { text-align: right; white-space: nowrap; padding-right: 22px !important; }
   /* Edit / Delete stay in view at the right edge while the wider columns scroll sideways (desktop). */
   table.tracks th.c-actions, table.tracks td.c-actions { position: sticky; right: 0; z-index: 1; background: var(--card); box-shadow: -10px 0 10px -10px rgba(15, 23, 42, 0.25); }
+  /* Desktop: a slimmer table that fits the page from 1280 px up (no sideways scrolling there). */
+  @media (min-width: 761px) {
+    table.tracks th, table.tracks td { padding-left: 10px; padding-right: 10px; }
+    table.tracks th { white-space: normal; }   /* headers may wrap to two lines */
+    .c-check { padding-left: 18px !important; }
+    .c-actions { padding-right: 16px !important; }
+    table.tracks .in-pl .pl-chip { white-space: normal; }
+    table.tracks td.c-links .stream { padding: 5px 9px; gap: 5px; margin-right: 6px; }
+    table.tracks td.c-status .status { display: inline-grid; grid-template-columns: auto auto; column-gap: 6px; align-items: center; }
+    table.tracks td.c-status .status .svc { grid-column: 2; }   /* "Search Query –" with the service name underneath */
+  }
+  /* From 1280 px the table fits, so the list stops scrolling sideways and the header row stays pinned at the top. */
+  @media (min-width: 1280px) {
+    .table-card { overflow: clip; }   /* clips like before, but is not a scroll box, so the header can pin to the page */
+    .table-scroll { overflow-x: visible; }
+    table.tracks td.c-title { overflow-wrap: anywhere; }   /* a very long word breaks only when it cannot fit (needed to fit at 1280 px) */
+    table.tracks thead th { position: sticky; top: 0; z-index: 2; box-shadow: inset 0 -1px 0 var(--border); }
+    table.tracks thead th.c-actions { z-index: 3; box-shadow: -10px 0 10px -10px rgba(15, 23, 42, 0.25), inset 0 -1px 0 var(--border); }
+  }
   .empty-row td { text-align: center; color: var(--muted); padding: 40px 16px !important; }
 
   .pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; white-space: nowrap; }
