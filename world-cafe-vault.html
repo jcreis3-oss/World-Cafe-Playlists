@@ -309,6 +309,8 @@
   .c-links { white-space: nowrap; }
   .c-notes { max-width: 240px; color: #475569; font-size: 0.85rem; overflow-wrap: anywhere; } /* long web addresses in notes wrap instead of widening the list */
   .c-actions { text-align: right; white-space: nowrap; padding-right: 22px !important; }
+  /* Edit / Delete stay in view at the right edge while the wider columns scroll sideways (desktop). */
+  table.tracks th.c-actions, table.tracks td.c-actions { position: sticky; right: 0; z-index: 1; background: var(--card); box-shadow: -10px 0 10px -10px rgba(15, 23, 42, 0.25); }
   .empty-row td { text-align: center; color: var(--muted); padding: 40px 16px !important; }
 
   .pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; white-space: nowrap; }
@@ -748,6 +750,8 @@
     table.tracks tbody tr.pl-member { box-shadow: inset 4px 0 0 var(--amber), var(--shadow); }
     .c-check { position: absolute; top: 14px; right: 14px; width: auto; padding: 0 !important; }
     .c-num, .c-shownum { display: none !important; }
+    table.tracks th.c-actions, table.tracks td.c-actions { position: static; z-index: auto; box-shadow: none; }   /* phone cards: as before */
+    table.tracks td.c-actions { background: transparent; }
     .lib-n { display: inline; color: var(--muted); font-size: 0.8rem; font-weight: 600; margin-right: 6px; }
     .show-n { display: inline; color: var(--muted); font-size: 0.8rem; }
     .dp-row { grid-template-columns: auto minmax(0, 1fr); }
