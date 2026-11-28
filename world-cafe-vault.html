@@ -291,6 +291,22 @@
   .src-tag.xpn2 { color: #0f766e; background: #e6f4f2; }
   .ootb-bar.hr-bar span { background: #0f766e; }
   .src-tag.alt { color: #4d6b0c; background: #eef5e0; }
+  .src-tag.ua { color: #0369a1; background: #e0f2fe; }
+  .status .svc { font-weight: 800; }
+  .status .svc.sp { color: var(--spotify-text); }
+  .status .svc.yt { color: var(--yt-text); }
+  .status.rv-status { display: flex; width: fit-content; margin-top: 3px; font-size: 0.78rem; }
+  #track-form.ua .bc-only { display: none; }
+  .ar-svc { display: flex; flex-direction: column; gap: 8px; margin: 4px 0 6px; }
+  #artist-form .ar-svc label { display: flex; align-items: flex-start; gap: 8px; margin: 0; font-weight: 700; font-size: 0.9rem; color: var(--text); cursor: pointer; }
+  #artist-form .ar-svc label input { width: auto; min-height: 0; flex: none; margin: 3px 0 0; padding: 0; }
+  #artist-form .ar-svc label > span { flex: 1; min-width: 0; }
+  #artist-form .ar-svc .form-hint { display: block; margin: 2px 0 0; font-weight: 500; }
+  .ar-result { margin-top: 12px; padding: 12px; border-radius: 10px; background: var(--pill); font-size: 0.9rem; }
+  .ar-result[hidden] { display: none; }
+  .ar-result p { margin: 0 0 10px; }
+  .ar-result .row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .ar-result .alts { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 10px; }
   .ootb-bar.hr-bar.alt span { background: #6f9a12; }
   .hr-switch { margin: 4px 0 10px; max-width: 280px; }
   #hourly-import select { width: auto; min-width: 7.6em; padding: 6px 28px 6px 8px; }
@@ -747,6 +763,7 @@
     .cc-tools { flex-direction: column; gap: 4px; }
     .cc-all { align-self: flex-end; }
     .panel-actions .btn { padding: 9px 6px; font-size: 0.82rem; gap: 5px; }
+    #btn-add { order: 1; } #btn-add-artist { order: 2; } #btn-resolve { order: 3; grid-column: 1 / -1; }
     .brand { flex: 1 1 100%; }
     .review-item .vs { grid-template-columns: 1fr; gap: 8px; }
     .rs-grid { grid-template-columns: 1fr; gap: 4px; }
@@ -873,7 +890,8 @@
         <div class="panel-title"><span class="ico" data-icon="filter"></span>Search &amp; Filter Tracks</div>
         <div class="panel-actions">
           <button class="btn btn-outline" id="btn-resolve" title="Find direct Spotify links for tracks still marked Search Query"><span class="ico" data-icon="wand"></span>Resolve links</button>
-          <button class="btn btn-indigo" id="btn-add"><span class="ico" data-icon="plus"></span>Add Track</button>
+          <button class="btn btn-outline" id="btn-add-artist" title="Start from an artist: look them up on Spotify or YouTube, then add a song"><span class="ico" data-icon="search"></span>Add Song by Artist</button>
+          <button class="btn btn-indigo" id="btn-add" title="Add a song that didn't come from an import"><span class="ico" data-icon="plus"></span>Add Song by Name</button>
         </div>
       </div>
       <div class="filters">
@@ -1255,32 +1273,51 @@
   </div>
 </div>
 
+<!-- Add Song by Artist -->
+<div class="modal-backdrop" id="artist-modal" role="dialog" aria-modal="true" aria-labelledby="artist-title">
+  <form class="modal" id="artist-form" novalidate style="max-width:460px">
+    <div class="modal-head"><h2 id="artist-title">Add Song by Artist</h2><button type="button" class="close-x" id="artist-close" aria-label="Close">×</button></div>
+    <div class="form-group"><label for="ar-name">Artist</label><input type="text" id="ar-name" autocomplete="off" required></div>
+    <div class="form-group"><span class="lbl" style="display:block;font-size:0.8rem;font-weight:700;color:#475569;margin-bottom:5px">Look the artist up on</span>
+      <div class="ar-svc" role="radiogroup" aria-label="Service">
+        <label><input type="radio" name="ar-svc" value="sp" checked><span>Spotify<span class="form-hint" id="ar-sp-note"></span></span></label>
+        <label><input type="radio" name="ar-svc" value="yt"><span>YouTube<span class="form-hint" id="ar-yt-note"></span></span></label>
+      </div>
+    </div>
+    <div class="ar-result" id="ar-result" hidden aria-live="polite"></div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-soft" id="ar-cancel">Cancel</button>
+      <button type="submit" class="btn btn-indigo" id="ar-go">Look up</button>
+    </div>
+  </form>
+</div>
+
 <!-- Add / Edit Track Modal -->
 <div class="modal-backdrop" id="track-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
   <form class="modal" id="track-form" novalidate>
-    <div class="modal-head"><h2 id="modal-title">Add Broadcast Track</h2><button type="button" class="close-x" id="track-close" aria-label="Close">×</button></div>
+    <div class="modal-head"><h2 id="modal-title">Add Song by Name</h2><button type="button" class="close-x" id="track-close" aria-label="Close">×</button></div>
     <input type="hidden" id="form-id">
     <div class="form-grid">
       <div class="form-group"><label for="form-artist">Artist</label><input type="text" id="form-artist" required></div>
       <div class="form-group"><label for="form-song">Song Title</label><input type="text" id="form-song" required></div>
       <div class="form-group"><label for="form-album">Album</label><input type="text" id="form-album"></div>
       <div class="form-group"><label for="form-source">Source</label><select id="form-source"></select></div>
-      <div class="form-group"><label for="form-date">Show Date</label><input type="date" id="form-date" required></div>
-      <div class="form-group"><label for="form-airtime">Air Time</label><input type="text" id="form-airtime" placeholder="e.g. 1:00-2:00 PM ET"></div>
-      <div class="form-group full"><label for="form-guest">Featured Guest</label><input type="text" id="form-guest"></div>
-      <div class="form-group"><label for="form-type">Performance Type</label>
+      <div class="form-group bc-only"><label for="form-date">Show Date</label><input type="date" id="form-date" required></div>
+      <div class="form-group bc-only"><label for="form-airtime">Air Time</label><input type="text" id="form-airtime" placeholder="e.g. 1:00-2:00 PM ET"></div>
+      <div class="form-group full bc-only"><label for="form-guest">Featured Guest</label><input type="text" id="form-guest"></div>
+      <div class="form-group bc-only"><label for="form-type">Performance Type</label>
         <select id="form-type"><option>Studio Track</option><option>Live Session (*)</option></select></div>
-      <div class="form-group"><label for="form-status">Link Status</label>
+      <div class="form-group bc-only"><label for="form-status">Link Status</label>
         <select id="form-status"><option>Verified Direct</option><option>Search Query</option></select></div>
       <div class="form-group full"><label for="form-spotify">Spotify URL</label><input type="text" inputmode="url" autocomplete="off" spellcheck="false" id="form-spotify" placeholder="https://open.spotify.com/track/…">
         <div class="form-hint">Paste a Spotify song link or track ID. Leave blank to use a Spotify search link. Existing links are never changed unless you edit them here.</div></div>
       <div class="form-group full"><label for="form-youtube">YouTube URL</label><input type="text" inputmode="url" autocomplete="off" spellcheck="false" id="form-youtube" placeholder="https://music.youtube.com/…">
         <div class="form-hint">Paste a YouTube link or video ID. Leave blank to use a YouTube Music search link.</div></div>
-      <div class="form-group full"><label for="form-notes">Broadcast Notes</label><textarea id="form-notes"></textarea></div>
+      <div class="form-group full"><label for="form-notes" id="form-notes-label">Broadcast Notes</label><textarea id="form-notes"></textarea></div>
     </div>
     <div class="modal-actions">
       <button type="button" class="btn btn-soft" id="btn-cancel-track">Cancel</button>
-      <button type="submit" class="btn btn-indigo">Save Track</button>
+      <button type="submit" class="btn btn-indigo" id="btn-save-track">Save Track</button>
     </div>
   </form>
 </div>
@@ -1362,7 +1399,11 @@ const icon = (name) => '<span class="ico">' + ICON[name] + '</span>';
    Constants & storage
    ========================================================= */
 const STORE_KEY = 'worldCafeVault.v1';
-const SOURCES = ['World Cafe', 'XPN2', 'Out of the Box', 'AltRadio'];
+const USER_ADDED = 'User Added';   // songs you add yourself: no show, no show date; imports never use it
+const SOURCES = ['World Cafe', 'XPN2', 'Out of the Box', 'AltRadio', USER_ADDED];
+const BROADCAST_SOURCES = SOURCES.filter((s) => s !== USER_ADDED);
+// One-time cleanup (requested): a duplicate YouTube export of "Nov. 2026" whose playlist was deleted in YouTube.
+const STALE_YT_EXPORTS = ['PLEz1Q993ILB8'];
 const LIVE = 'Live Session (*)';
 const STUDIO = 'Studio Track';
 const VERIFIED = 'Verified Direct';
@@ -1385,6 +1426,12 @@ function loadDb() {
 }
 
 let db = loadDb();
+function dropStaleExports() {
+  const before = (db.youtubeExports || []).length;
+  if (!before) return false;
+  db.youtubeExports = db.youtubeExports.filter((x) => !STALE_YT_EXPORTS.includes(x.id));
+  return db.youtubeExports.length !== before;
+}
 
 function saveDb() {
   try {
@@ -1489,9 +1536,10 @@ function toast(msg, kind) {
   setTimeout(() => el.remove(), kind === 'error' ? 7000 : 3500);
 }
 
-function confirmDialog(title, msg, okLabel, safe) {
+function confirmDialog(title, msg, okLabel, safe, cancelLabel) {
   return new Promise((resolve) => {
     $('#confirm-ok').className = 'btn ' + (safe ? 'btn-indigo' : 'btn-danger');
+    $('#confirm-cancel').textContent = cancelLabel || 'Cancel';
     $('#confirm-title').textContent = title;
     $('#confirm-msg').textContent = msg;
     $('#confirm-ok').textContent = okLabel || 'Delete';
@@ -1850,6 +1898,12 @@ function scopedTracks() {
 }
 
 function broadcastKey(t) { return t.source + '|' + t.showDate + '|' + (t.airTime || ''); }
+// User Added songs have no show: they stay out of Show Archives, the show count and import borders.
+function isUserAdded(t) { return t.source === USER_ADDED; }
+// "Thu Nov 19, 2026", or '' for a song with no show date.
+function showDateLabel(t) { return t.showLabel || labelFromIso(t.showDate); }
+// "date · source" without an empty date part.
+function dateSource(t, raw) { return [raw ? (t.showLabel || t.showDate) : showDateLabel(t), t.source].filter(Boolean).join(' · '); }
 function archiveKey(t) { return isHourlySource(t.source) ? t.source + '|' + t.showDate + '|*' : broadcastKey(t); }
 
 function streamLinks(t) {
@@ -1861,14 +1915,23 @@ function streamLinks(t) {
       icon('ytmusic') + 'YT Music<span class="ext">' + ICON.external + '</span></a>' : '');
 }
 
-function statusHtml(t) {
-  return t.linkStatus === VERIFIED
-    ? '<span class="status ok">' + icon('checkCircle') + 'Verified Direct</span>'
-    : '<span class="status search">' + icon('searchSmall') + 'Search Query</span>';
+// Display only: which services have a direct link (Spotify: verified track link; YouTube: a video link).
+// The stored linkStatus (Spotify) and everything that reads it are unchanged.
+function linkState(t) { return { sp: !!spTrackId(t), yt: !!ytVideoId(t.youtubeUrl) }; }
+function statusText(t) {
+  const d = linkState(t);
+  return d.sp && d.yt ? 'Verified Direct' : d.sp ? 'Search Query – YouTube' : d.yt ? 'Search Query – Spotify' : 'Search Query';
+}
+function statusHtml(t, cls) {
+  const d = linkState(t);
+  const c = cls ? ' ' + cls : '';
+  if (d.sp && d.yt) return '<span class="status ok' + c + '">' + icon('checkCircle') + 'Verified Direct</span>';
+  const svc = d.sp ? ' – <span class="svc yt">YouTube</span>' : d.yt ? ' – <span class="svc sp">Spotify</span>' : '';
+  return '<span class="status search' + c + '">' + icon('searchSmall') + 'Search Query' + svc + '</span>';
 }
 
 function sourceTag(source) {
-  return '<span class="src-tag' + (source === 'World Cafe' ? ' wc' : source === 'Out of the Box' ? ' ootb' : source === 'XPN2' ? ' xpn2' : source === 'AltRadio' ? ' alt' : '') + '">' + escapeHtml(source) + '</span>';
+  return '<span class="src-tag' + (source === 'World Cafe' ? ' wc' : source === 'Out of the Box' ? ' ootb' : source === 'XPN2' ? ' xpn2' : source === 'AltRadio' ? ' alt' : source === USER_ADDED ? ' ua' : '') + '">' + escapeHtml(source) + '</span>';
 }
 
 /* =========================================================
@@ -1909,6 +1972,7 @@ function filteredTracks() {
     return String(t[key] || '').toLowerCase();
   };
   list.sort((a, b) => {
+    if (key === 'showDate' && !a.showDate !== !b.showDate) return a.showDate ? -1 : 1;   // no show date: last either way
     const va = val(a), vb = val(b);
     return va < vb ? -mul : va > vb ? mul : 0;
   });
@@ -1918,7 +1982,7 @@ function filteredTracks() {
 function renderFilterOptions() {
   const dateSel = $('#f-date');
   const keep = dateSel.value;
-  const dates = [...new Set(db.tracks.map((t) => t.showDate))].sort().reverse();
+  const dates = [...new Set(db.tracks.map((t) => t.showDate).filter(Boolean))].sort().reverse();
   dateSel.innerHTML = '<option value="">All Dates</option>' +
     dates.map((d) => '<option value="' + d + '">' + escapeHtml(labelFromIso(d)) + '</option>').join('');
   if (dates.includes(keep)) dateSel.value = keep;
@@ -1933,7 +1997,7 @@ function renderFilterOptions() {
 function renderMetricsAndCounts() {
   const list = scopedTracks();
   const total = list.length;
-  const shows = new Set(list.map(archiveKey)).size;   // one per Show Archives card (an hourly source counts once per day)
+  const shows = new Set(list.filter((t) => !isUserAdded(t)).map(archiveKey)).size;   // one per Show Archives card (an hourly source counts once per day)
   const live = list.filter((t) => t.type === LIVE).length;
   const verified = list.filter((t) => t.linkStatus === VERIFIED).length;
   $('#m-tracks').textContent = total;
@@ -1961,7 +2025,7 @@ function trackRowHtml(t, selected, startsImport) {
     '<td class="c-num">' + (t.position || '—') + '</td>' +
     '<td class="c-title"><div class="song">' + escapeHtml(t.song) + '</div><div class="artist">' + escapeHtml(t.artist) + '</div>' +
       (t.album ? '<div class="album">' + escapeHtml(t.album) + '</div>' : '') + inPl + '</td>' +
-    '<td class="c-date">' + escapeHtml(t.showLabel || labelFromIso(t.showDate)) +
+    '<td class="c-date">' + (showDateLabel(t) ? escapeHtml(showDateLabel(t)) : '<span style="color:var(--faint)" title="No show date">—</span>') +
       '<div class="meta">' + sourceTag(t.source) + (t.airedAt ? '<span class="air">aired ' + escapeHtml(t.airedAt) + '</span>' : t.airTime ? '<span class="air">' + escapeHtml(t.airTime) + '</span>' : '') + '</div></td>' +
     '<td class="c-type">' + typePill + '</td>' +
     '<td class="c-links">' + streamLinks(t) + '</td>' +
@@ -1982,14 +2046,14 @@ function noFiltersActive() {
     !$('#f-status').value && !$('#f-source').value && !$('#f-inpl').value;
 }
 function importStarts(list) {
-  const keys = list.map(broadcastKey);
+  const keys = list.map((t) => isUserAdded(t) ? null : broadcastKey(t));
   const seen = new Set();
   for (let i = 0; i < keys.length; i++) {
-    if (i > 0 && keys[i] === keys[i - 1]) continue;
+    if (keys[i] === null || (i > 0 && keys[i] === keys[i - 1])) continue;
     if (seen.has(keys[i])) return keys.map(() => false);
     seen.add(keys[i]);
   }
-  return keys.map((k, i) => i === 0 || k !== keys[i - 1]);
+  return keys.map((k, i) => k !== null && (i === 0 || k !== keys[i - 1]));
 }
 
 function renderTable() {
@@ -2029,6 +2093,7 @@ function showMeta(source, showDate, airTime) {
 function renderShows() {
   const groups = new Map();
   scopedTracks().forEach((t) => {
+    if (isUserAdded(t)) return;   // no show
     const hourly = isHourlySource(t.source);
     const k = archiveKey(t);
     if (!groups.has(k)) groups.set(k, { source: t.source, showDate: t.showDate, airTime: hourly ? '' : (t.airTime || ''), hourly, tracks: [] });
@@ -2036,7 +2101,7 @@ function renderShows() {
   });
   const list = [...groups.values()].sort((a, b) => b.showDate.localeCompare(a.showDate) || hourStartFromLabel(b.airTime) - hourStartFromLabel(a.airTime) || b.airTime.localeCompare(a.airTime));
   if (!list.length) {
-    $('#show-cards').innerHTML = '<div class="card panel muted">No broadcasts yet. Import your Sheet CSVs to fill the archive.</div>';
+    $('#show-cards').innerHTML = '<div class="card panel muted">' + ($('#f-source').value === USER_ADDED ? 'User Added songs have no show date, so they don\'t appear in Show Archives. Find them in Song Explorer.' : 'No broadcasts yet. Import your Sheet CSVs to fill the archive.') + '</div>';
     return;
   }
   $('#show-cards').innerHTML = list.map((g) => {
@@ -2134,7 +2199,7 @@ function renderCreator() {
   $('#builder-list').innerHTML = sel.map((t, i) =>
     '<li data-id="' + t.id + '"' + (membershipFor(t.id).length ? ' class="pl-member"' : '') + '><span class="n">' + (i + 1) + '</span>' +
     '<div class="t"><div><b>' + escapeHtml(t.song) + '</b> · ' + escapeHtml(t.artist) + '</div>' +
-    '<div class="meta">' + escapeHtml(t.source + ' · ' + (t.showLabel || t.showDate)) + (t.type === LIVE ? ' · ★ live' : '') + '</div>' + membershipHtml(t.id) + '</div>' +
+    '<div class="meta">' + escapeHtml([t.source, t.showLabel || t.showDate].filter(Boolean).join(' · ')) + (t.type === LIVE ? ' · ★ live' : '') + '</div>' + membershipHtml(t.id) + '</div>' +
     '<button class="pq-row" data-pq-start="sel" data-pq-row aria-label="Play from here" title="Play from here">' + icon('play') + '</button>' +
     '<button class="icon-btn" data-op="up" aria-label="Move up">' + icon('up') + '</button>' +
     '<button class="icon-btn" data-op="down" aria-label="Move down">' + icon('down') + '</button>' +
@@ -2233,18 +2298,29 @@ function afterSelectionChange() {
 /* =========================================================
    Add / edit / delete
    ========================================================= */
-function fillSourceSelect(sel, value) {
-  sel.innerHTML = SOURCES.map((s) => '<option>' + escapeHtml(s) + '</option>').join('');
+function fillSourceSelect(sel, value, list) {
+  sel.innerHTML = (list || SOURCES).map((s) => '<option>' + escapeHtml(s) + '</option>').join('');
   sel.value = value || 'World Cafe';
 }
 
-function openTrackModal(track) {
-  $('#modal-title').textContent = track ? 'Edit Broadcast Track' : 'Add Broadcast Track';
+// Add Song by Name (new songs, default User Added) and Edit Song (a User Added song) hide the broadcast-only
+// fields while the source is User Added. Editing a broadcast track keeps "Edit Broadcast Track" as it was.
+function syncTrackFormMode() {
+  const ua = $('#form-source').value === USER_ADDED;
+  $('#track-form').classList.toggle('ua', ua);
+  $('#form-notes-label').textContent = ua ? 'Notes' : 'Broadcast Notes';
+  $('#btn-save-track').textContent = ua ? 'Save Song' : 'Save Track';
+  if (ua) $('#form-album').placeholder = 'Leave blank for a single'; else $('#form-album').removeAttribute('placeholder');
+}
+function openTrackModal(track, preset) {
+  const broadcastEdit = !!track && !isUserAdded(track);
+  $('#modal-title').textContent = broadcastEdit ? 'Edit Broadcast Track' : track ? 'Edit Song' : 'Add Song by Name';
   $('#form-id').value = track ? track.id : '';
-  $('#form-artist').value = track ? track.artist : '';
+  $('#form-artist').value = track ? track.artist : (preset && preset.artist) || '';
   $('#form-song').value = track ? track.song : '';
   $('#form-album').value = track ? track.album || '' : '';
-  fillSourceSelect($('#form-source'), track ? track.source : ($('#f-source').value || 'World Cafe'));
+  if (broadcastEdit) fillSourceSelect($('#form-source'), track.source, BROADCAST_SOURCES);
+  else fillSourceSelect($('#form-source'), track ? track.source : USER_ADDED);
   $('#form-date').value = track ? track.showDate : ($('#f-date').value || todayIso());
   $('#form-airtime').value = track ? track.airTime || '' : '';
   $('#form-guest').value = track ? track.featuredGuest || '' : '';
@@ -2253,20 +2329,28 @@ function openTrackModal(track) {
   $('#form-spotify').value = track ? track.spotifyUrl || '' : '';
   $('#form-youtube').value = track ? track.youtubeUrl || '' : '';
   $('#form-notes').value = track ? track.notes || '' : '';
+  if (track && !track.showDate) $('#form-date').value = $('#f-date').value || todayIso();   // if it is switched to a broadcast source
+  syncTrackFormMode();
   $('#track-modal').classList.add('open');
-  setTimeout(() => $('#form-artist').focus(), 50);
+  const focusId = preset && preset.artist && !track ? '#form-song' : '#form-artist';
+  setTimeout(() => $(focusId).focus(), 60);
 }
 
 function closeTrackModal() { $('#track-modal').classList.remove('open'); }
 
-function saveTrackFromForm(ev) {
+async function saveTrackFromForm(ev) {
   ev.preventDefault();
   const id = $('#form-id').value;
   const artist = $('#form-artist').value.trim();
   const song = $('#form-song').value.trim().replace(/\s*\*+\s*$/, '');
-  const showDate = $('#form-date').value;
-  if (!artist || !song || !showDate) { toast('Artist, song and show date are required.', 'error'); return; }
+  const ua = $('#form-source').value === USER_ADDED;
+  const showDate = ua ? '' : $('#form-date').value;
+  if (!artist || !song || (!ua && !showDate)) { toast(ua ? 'Artist and song title are required.' : 'Artist, song and show date are required.', 'error'); return; }
   const existing = id ? db.tracks.find((t) => t.id === id) : null;
+  if (ua && !existing) {
+    const twin = db.tracks.find((t) => isUserAdded(t) && spKey(t.artist, t.song) === spKey(artist, song));
+    if (twin && !(await confirmDialog('Add another copy?', '"' + twin.song + '" by ' + twin.artist + ' is already one of your User Added songs.', 'Add another copy', true))) return;
+  }
 
   // URLs: an unchanged field is kept exactly. Only fill a search link when the field is empty.
   let spotifyUrl = $('#form-spotify').value.trim();
@@ -2297,14 +2381,14 @@ function saveTrackFromForm(ev) {
       ytSet = p.id;
     }
   }
-  let linkStatus = $('#form-status').value;
+  let linkStatus = ua ? SEARCH : $('#form-status').value;   // User Added: status comes from the link alone
   if (linkStatus === VERIFIED && !isDirectSpotify(spotifyUrl)) linkStatus = SEARCH;
   if (isDirectSpotify(spotifyUrl)) linkStatus = VERIFIED;
 
   const fields = {
     artist, song, album: $('#form-album').value.trim(), source: $('#form-source').value,
-    showDate, showLabel: labelFromIso(showDate), airTime: $('#form-airtime').value.trim(),
-    featuredGuest: $('#form-guest').value.trim(), type: $('#form-type').value, linkStatus,
+    showDate, showLabel: labelFromIso(showDate), airTime: ua ? '' : $('#form-airtime').value.trim(),
+    featuredGuest: ua ? '' : $('#form-guest').value.trim(), type: ua ? STUDIO : $('#form-type').value, linkStatus,
     spotifyUrl, youtubeUrl, notes: $('#form-notes').value.trim()
   };
   if (ytSet) fields.youtubeUrl = existing ? existing.youtubeUrl : youtubeSearchUrl(artist, song);
@@ -2332,7 +2416,7 @@ function saveTrackFromForm(ev) {
   saveDb();
   closeTrackModal();
   renderAll();
-  toast(existing ? 'Track updated' : 'Track added', 'ok');
+  toast(existing ? (ua ? 'Song updated' : 'Track updated') : (ua ? 'Added "' + song + '" to User Added' : 'Track added'), 'ok');
 }
 
 async function deleteTrack(id) {
@@ -2340,7 +2424,7 @@ async function deleteTrack(id) {
   if (!t) return;
   const inPlaylists = db.playlists.filter((p) => p.items.some((i) => i.trackId === id)).length;
   const ok = await confirmDialog('Delete track?',
-    t.song + ' – ' + t.artist + '\n' + (t.showLabel || t.showDate) + ' · ' + t.source +
+    t.song + ' – ' + t.artist + '\n' + dateSource(t, true) +
     (inPlaylists ? '\n\nIt appears in ' + inPlaylists + ' saved playlist(s); it will be kept there as text.' : ''), 'Delete');
   if (!ok) return;
   // Keep playlist entries readable even after the track is gone.
@@ -2376,6 +2460,7 @@ async function restore(file) {
   const settings = db.settings; // keep this device's settings
   delete data.exportedAt;
   db = Object.assign(emptyDb(), data, { settings: Object.assign({}, data.settings, settings) });
+  dropStaleExports();
   saveDb();
   renderAll();
   toast('Library restored: ' + db.tracks.length + ' tracks', 'ok');
@@ -2484,11 +2569,124 @@ $('#selbar-clear').addEventListener('click', clearSel);
 $('#selbar-go').addEventListener('click', () => { switchView('creator'); window.scrollTo({ top: 0, behavior: 'smooth' }); });
 
 $('#btn-add').addEventListener('click', () => openTrackModal(null));
+$('#form-source').addEventListener('change', syncTrackFormMode);
 $('#btn-cancel-track').addEventListener('click', closeTrackModal);
 $('#track-close').addEventListener('click', closeTrackModal);
 $('#track-form').addEventListener('submit', saveTrackFromForm);
 $('#form-spotify').addEventListener('input', (e) => {
   $('#form-status').value = isDirectSpotify(e.target.value) || spParseInput(e.target.value).id ? VERIFIED : SEARCH;
+});
+
+/* ---------- Add Song by Artist: look the artist up on Spotify or YouTube, then add a song ---------- */
+const AR_YT_UNITS = 100;   // one search.list call (type=channel)
+let arBusy = false, arSeq = 0;
+function arService() { return document.querySelector('input[name="ar-svc"]:checked').value; }
+function arNotes() {
+  $('#ar-sp-note').textContent = spGetToken() ? 'Connected: exact artist lookup.' : 'Not connected on this device: opens Spotify search results instead.';
+  $('#ar-yt-note').textContent = db.settings.youtubeApiKey
+    ? 'Each YouTube artist lookup uses ' + AR_YT_UNITS + ' of the daily quota units, the same tally as the resolve runs (' + ytSearchesLeft() + ' left today).'
+    : 'No YouTube key on this device: opens YouTube Music search results instead. (With a key, each lookup uses ' + AR_YT_UNITS + ' of the daily quota units, the same tally as the resolve runs.)';
+}
+function openArtistModal() {
+  $('#ar-name').value = '';
+  $('#ar-result').hidden = true;
+  $('#ar-result').innerHTML = '';
+  arNotes();
+  $('#artist-modal').classList.add('open');
+  setTimeout(() => $('#ar-name').focus(), 50);
+}
+function closeArtistModal() { arSeq++; $('#artist-modal').classList.remove('open'); }
+const arKey = (s) => norm(s).replace(/ /g, '');
+const arSearchUrl = (svc, name) => svc === 'sp'
+  ? 'https://open.spotify.com/search/' + encodeURIComponent(name) + '/artists'
+  : 'https://music.youtube.com/search?q=' + encodeURIComponent(name);
+function arShow(html) { $('#ar-result').innerHTML = html; $('#ar-result').hidden = false; }
+function arAddBtn(name) {
+  return '<button type="button" class="btn btn-indigo btn-sm" data-ar-add="' + escapeHtml(name) + '">' + icon('plus') + 'Add a song by ' + escapeHtml(name) + '</button>';
+}
+function arOpenBtn(svc, name, url) {
+  return '<a class="btn btn-outline btn-sm" href="' + escapeHtml(safeUrl(url) || '#') + '" target="_blank" rel="noopener noreferrer">' +
+    icon(svc === 'sp' ? 'spotify' : 'ytmusic') + 'Open ' + escapeHtml(name) + ' on ' + (svc === 'sp' ? 'Spotify' : 'YouTube Music') + ' <span class="ico" data-icon="external">' + ICON.external + '</span></a>';
+}
+function arFound(svc, name, url) {
+  arShow('<p>Found <b>' + escapeHtml(name) + '</b> on ' + (svc === 'sp' ? 'Spotify' : 'YouTube') + '.</p><div class="row">' + arOpenBtn(svc, name, url) + arAddBtn(name) + '</div>');
+}
+// Spotify: exact name match (ignoring case, "The" and punctuation); otherwise up to three close names.
+async function arSpotify(name) {
+  const data = await spApi('/search?' + new URLSearchParams({ q: name, type: 'artist', limit: '10' }));
+  const items = (data && data.artists && data.artists.items) || [];
+  const hit = items.find((a) => arKey(a.name) === arKey(name));
+  const url = (a) => (a.external_urls && a.external_urls.spotify) || 'https://open.spotify.com/artist/' + a.id;
+  if (hit) return { hit: { name: hit.name, url: url(hit) } };
+  return { alts: items.slice(0, 3).map((a) => ({ name: a.name, url: url(a) })) };
+}
+// YouTube: the artist's own channel, its "Name - Topic" channel or its VEVO channel; opens the YouTube Music page.
+async function arYouTube(name) {
+  const params = new URLSearchParams({ part: 'snippet', type: 'channel', maxResults: '10', q: name, key: db.settings.youtubeApiKey });
+  const res = await fetch(YT_SEARCH_URL + '?' + params, { referrerPolicy: 'no-referrer-when-downgrade' });
+  ytAddUnits(AR_YT_UNITS);
+  saveDb();
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error((data.error && data.error.message) || ('HTTP ' + res.status));
+  const k = arKey(name);
+  const chans = (data.items || []).map((it) => ({ id: it.id && it.id.channelId, title: (it.snippet && (it.snippet.channelTitle || it.snippet.title)) || '' })).filter((c) => c.id);
+  const kind = (c) => { const t = arKey(c.title); return t === k + 'topic' ? 1 : t === k ? 2 : t === k + 'vevo' || t === k + 'officialvevo' ? 3 : t === k + 'official' ? 2 : 0; };
+  const ranked = chans.filter(kind).sort((a, b) => kind(a) - kind(b));
+  const url = (c) => 'https://music.youtube.com/channel/' + c.id;
+  const clean = (c) => c.title.replace(/\s*-\s*Topic$/i, '').replace(/VEVO$/i, '').trim() || name;
+  if (ranked.length) return { hit: { name: clean(ranked[0]), url: url(ranked[0]) } };
+  const words = norm(name).split(' ').filter((w) => w.length > 2);
+  const near = chans.filter((c) => words.some((w) => norm(c.title).split(' ').includes(w)));
+  return { alts: near.slice(0, 3).map((c) => ({ name: clean(c), url: url(c) })) };
+}
+async function arLookup(ev) {
+  ev.preventDefault();
+  if (arBusy) return;
+  const name = $('#ar-name').value.trim();
+  if (!name) { toast('Type an artist name first.', 'error'); $('#ar-name').focus(); return; }
+  const svc = arService();
+  const svcName = svc === 'sp' ? 'Spotify' : 'YouTube';
+  const connected = svc === 'sp' ? !!spGetToken() : !!db.settings.youtubeApiKey && ytSearchesLeft() > 0;
+  if (!connected) {
+    // Opened straight from the click, so the browser doesn't block the new tab.
+    const url = arSearchUrl(svc, name);
+    window.open(url, '_blank', 'noopener');
+    const why = svc === 'sp' ? 'You\'re not connected to Spotify on this device' : db.settings.youtubeApiKey ? 'There\'s no YouTube quota left today' : 'There\'s no YouTube key on this device';
+    arShow('<p>' + why + ', so I opened ' + (svc === 'sp' ? 'Spotify' : 'YouTube Music') + '\'s search results for <b>' + escapeHtml(name) + '</b>. That\'s a search, not the exact artist page.</p>' +
+      '<div class="row"><a class="btn btn-outline btn-sm" href="' + escapeHtml(url) + '" target="_blank" rel="noopener noreferrer">Open the search again <span class="ico">' + ICON.external + '</span></a>' + arAddBtn(name) + '</div>');
+    return;
+  }
+  arBusy = true;
+  const seq = ++arSeq;
+  $('#ar-go').disabled = true;
+  arShow('<p class="muted">Looking up ' + escapeHtml(name) + ' on ' + svcName + '…</p>');
+  try {
+    const r = svc === 'sp' ? await arSpotify(name) : await arYouTube(name);
+    if (seq !== arSeq) return;   // you changed the service or closed the window meanwhile
+    if (r.hit) arFound(svc, r.hit.name, r.hit.url);
+    else arShow('<p><b>' + escapeHtml(name) + '</b> doesn\'t seem to be on ' + svcName + ' (no exact match).' + (r.alts.length ? ' Did you mean one of these?' : '') + '</p>' +
+      (r.alts.length ? '<div class="alts">' + r.alts.map((a) => '<button type="button" class="pl-chip" data-ar-pick="' + escapeHtml(a.name) + '" data-ar-svc="' + svc + '" data-ar-url="' + escapeHtml(a.url) + '">' + escapeHtml(a.name) + '</button>').join('') + '</div>' : '') +
+      '<div class="row">' + arAddBtn(name) + '</div>');
+  } catch (e) {
+    if (seq !== arSeq) return;
+    arShow('<p style="color:var(--danger)">The ' + svcName + ' lookup failed: ' + escapeHtml(e.message) + '</p><div class="row">' + arAddBtn(name) + '</div>');
+  } finally {
+    arBusy = false;
+    $('#ar-go').disabled = false;
+    arNotes();
+  }
+}
+$('#btn-add-artist').addEventListener('click', openArtistModal);
+$('#artist-close').addEventListener('click', closeArtistModal);
+$('#ar-cancel').addEventListener('click', closeArtistModal);
+$('#artist-form').addEventListener('submit', arLookup);
+$('#artist-form').addEventListener('change', (e) => { if (e.target.name === 'ar-svc') { arSeq++; $('#ar-result').hidden = true; arNotes(); } });
+$('#ar-name').addEventListener('input', () => { arSeq++; $('#ar-result').hidden = true; });
+$('#ar-result').addEventListener('click', (e) => {
+  const pick = e.target.closest('[data-ar-pick]');
+  if (pick) { arFound(pick.dataset.arSvc, pick.dataset.arPick, pick.dataset.arUrl); return; }
+  const add = e.target.closest('[data-ar-add]');
+  if (add) { closeArtistModal(); openTrackModal(null, { artist: add.dataset.arAdd }); }
 });
 
 const openImport = () => { $('#import-modal').classList.add('open'); ccOnOpen(); };
@@ -2501,6 +2699,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
   if ($('#confirm-modal').classList.contains('open')) { $('#confirm-cancel').click(); return; }
   closeTrackModal();
+  closeArtistModal();
   closeImport();
 });
 
@@ -2573,15 +2772,16 @@ function plEnsureOrder() {
 const plNameKey = (s) => String(s || '').trim().replace(/\s+/g, ' ').toLowerCase();
 // Adds library tracks to a saved playlist, at the end, in the order given. A track is skipped when the
 // playlist already has it, or has a text-only entry with the same artist and song.
-function plAddTracks(p, ids) {
-  const have = new Set(p.items.filter((i) => i.trackId).map((i) => i.trackId));
+function plAddTracks(p, ids, allowIds) {
+  const have = new Set(p.items.filter((i) => i.trackId).map((i) => i.trackId).filter((id) => !(allowIds && allowIds.has(id))));
   const textKeys = new Set(p.items.filter((i) => !i.trackId).map((i) => spKey(i.artist, i.song)));
-  const out = { added: 0, already: 0, asText: 0 };
+  const out = { added: 0, already: 0, asText: 0, copies: 0 };
   ids.forEach((id) => {
     const t = trackById(id);
     if (!t) return;
     if (have.has(id)) { out.already++; return; }
     if (textKeys.has(spKey(t.artist, t.song))) { out.asText++; return; }
+    if (allowIds && allowIds.has(id)) out.copies++;
     p.items.push({ trackId: id });
     have.add(id);
     out.added++;
@@ -2593,15 +2793,35 @@ function plAddSummary(p, r) {
   if (!r.added) return 'Nothing added: ' + [r.already ? n(r.already, 'track is', 'tracks are') + ' already in "' + p.name + '"' : '',
     r.asText ? n(r.asText, 'matches a text-only entry', 'match text-only entries') + ' already in it' : ''].filter(Boolean).join('; ') + '.';
   return 'Added ' + n(r.added, 'track', 'tracks') + ' to "' + p.name + '"' +
+    (r.copies ? ' (' + n(r.copies, 'second copy', 'second copies') + ')' : '') +
     (r.already ? '; ' + r.already + ' ' + (r.already === 1 ? 'was' : 'were') + ' already there' : '') +
     (r.asText ? '; ' + n(r.asText, 'matched a text-only entry', 'matched text-only entries') + ' already in it' : '') + '.';
 }
 // Adds the current selection to a saved playlist and tells you what happened.
-function plAddSelection(id) {
+// From the selection bar (fromBar): songs already in the playlist are asked about instead of skipped,
+// and the checks are cleared after a successful add. Playlist Creator's "Save to" keeps skipping them.
+async function plAddSelection(id, fromBar) {
   const p = db.playlists.find((x) => x.id === id);
   if (!p || !db.selection.length) return;
-  const r = plAddTracks(p, db.selection);
-  if (r.added) { saveDb(); renderCreator(); renderTable(); renderLive(); }
+  let allow = null;
+  if (fromBar) {
+    const inIt = new Set(p.items.map((i) => i.trackId).filter(Boolean));
+    const dupes = db.selection.filter((tid) => inIt.has(tid)).map(trackById).filter(Boolean);
+    if (dupes.length) {
+      const msg = dupes.length === 1
+        ? '"' + dupes[0].song + '" is already in "' + p.name + '". Add another copy anyway?'
+        : 'These ' + dupes.length + ' songs are already in "' + p.name + '":\n' + dupes.slice(0, 12).map((t) => '• ' + t.song + ' – ' + t.artist).join('\n') +
+          (dupes.length > 12 ? '\n…and ' + (dupes.length - 12) + ' more' : '') + '\n\nAdd another copy of each anyway?';
+      const yes = await confirmDialog('Already in this playlist', msg, 'Add anyway', true, 'Skip');
+      if (yes) allow = new Set(dupes.map((t) => t.id));
+    }
+  }
+  const r = plAddTracks(p, db.selection, allow);
+  if (r.added) {
+    if (fromBar) db.selection = [];
+    saveDb(); renderCreator(); renderTable(); renderLive();
+    if (fromBar) renderSelectionUi();
+  }
   toast(plAddSummary(p, r), r.added ? 'ok' : '');
 }
 function plMove(id, to) {
@@ -2639,7 +2859,7 @@ $('#selbar-menu').addEventListener('click', (e) => {
   if (!b) return;
   setSelbarMenu(false);
   if (b.dataset.addPl === 'new') { $('#selbar-go').click(); return; }
-  plAddSelection(b.dataset.addPl);
+  plAddSelection(b.dataset.addPl, true);
 });
 document.addEventListener('click', (e) => { if (!$('#selbar-menu').hidden && !e.target.closest('.selbar-add')) setSelbarMenu(false); });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('#selbar-menu').hidden) { setSelbarMenu(false); $('#selbar-add').focus(); } });
@@ -2715,8 +2935,8 @@ function renderCreatorBrowser() {
   $('#ct-list').innerHTML = shown.map((t) =>
     '<li data-id="' + t.id + '"' + (membershipFor(t.id).length ? ' class="pl-member"' : '') + '><label><input type="checkbox" class="ct-check"' + (sel.has(t.id) ? ' checked' : '') +
     ' aria-label="Select ' + escapeHtml(t.song + ' by ' + t.artist) + '"><span class="t"><b>' + escapeHtml(t.song) + '</b> · ' + escapeHtml(t.artist) +
-    '<span class="meta">' + escapeHtml((t.showLabel || labelFromIso(t.showDate)) + ' · ' + t.source) + (t.type === LIVE ? ' · ★ live' : '') +
-    ' · ' + (t.linkStatus === VERIFIED ? 'Verified Direct' : 'Search Query') + '</span></span></label></li>').join('') ||
+    '<span class="meta">' + escapeHtml(dateSource(t)) + (t.type === LIVE ? ' · ★ live' : '') +
+    ' · ' + statusHtml(t, 'ct-st') + '</span></span></label></li>').join('') ||
     '<li class="empty">No tracks match these filters.</li>';
   $('#ct-more').hidden = list.length <= ctLimit;
   $('#ct-more').textContent = 'Show ' + Math.min(50, list.length - ctLimit) + ' more (' + (list.length - ctLimit) + ' not shown)';
@@ -2964,7 +3184,7 @@ async function spSearch(q) {
 
 function trackLine(t) {
   return '<b>' + escapeHtml(t.song) + '</b> · ' + escapeHtml(t.artist) +
-    '<br><span>' + escapeHtml((t.showLabel || t.showDate) + ' · ' + t.source + (t.type === LIVE ? ' · ★ live session' : '')) + '</span>';
+    '<br><span>' + escapeHtml(dateSource(t, true) + (t.type === LIVE ? ' · ★ live session' : '')) + '</span>' + statusHtml(t, 'rv-status');
 }
 
 let resolveMode = 'spotify';
@@ -4636,7 +4856,7 @@ function renderAiPanel() {
     const t = trackById(p.trackId);
     return '<li data-id="' + t.id + '"><span class="n">' + (i + 1) + '</span>' +
       '<div class="t"><div><b>' + escapeHtml(t.song) + '</b> · ' + escapeHtml(t.artist) + '</div>' +
-      '<div class="meta">' + escapeHtml(t.source + ' · ' + (t.showLabel || t.showDate)) + (t.type === LIVE ? ' · ★ live' : '') + '</div>' +
+      '<div class="meta">' + escapeHtml([t.source, t.showLabel || t.showDate].filter(Boolean).join(' · ')) + (t.type === LIVE ? ' · ★ live' : '') + '</div>' +
       (p.reason ? '<div class="reason">' + escapeHtml(p.reason) + '</div>' : '') + '</div>' +
       '<button class="pq-row" data-pq-start="ai" data-pq-row aria-label="Play from here" title="Play from here">' + icon('play') + '</button>' +
       '<button class="icon-btn" data-op="up" aria-label="Move up">' + icon('up') + '</button>' +
@@ -4866,6 +5086,7 @@ function syncApply(data) {
   try {
     db = Object.assign(emptyDb(), data, { settings: Object.assign({}, data.settings || {}, keep) });
     delete db.exportedAt;
+    dropStaleExports();
     saveDb();
   } finally { syncApplying = false; }
   renderAll();
@@ -5396,7 +5617,13 @@ function playlistMembership() {
   [['sp', db.spotifyExports], ['yt', db.youtubeExports]].forEach(([kind, recs]) => (recs || []).forEach((x) => {
     if (!Array.isArray(x.trackIds) || !x.trackIds.length) return;
     const fromSaved = x.fromPlaylistId && db.playlists.some((p) => p.id === x.fromPlaylistId);
-    if (fromSaved) (exportsFor[x.fromPlaylistId] = exportsFor[x.fromPlaylistId] || []).push({ kind, url: x.url, name: x.name });
+    if (fromSaved) {
+      // One icon per service: keep only the most recent export of this playlist to that service.
+      const list = exportsFor[x.fromPlaylistId] = exportsFor[x.fromPlaylistId] || [];
+      const i = list.findIndex((e) => e.kind === kind);
+      const e = { kind, url: x.url, name: x.name, at: x.at || '' };
+      if (i < 0) list.push(e); else if (e.at >= list[i].at) list[i] = e;
+    }
     else x.trackIds.forEach((id) => add(id, { key: kind + ':' + x.id, kind, name: x.name, url: x.url }));
   }));
   db.playlists.forEach((p) => p.items.forEach((i) => {
@@ -6718,7 +6945,7 @@ function pqSourceName(src) {
 function pqShuffled(a) { const b = a.slice(); for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; }
 
 // Play button: shows the count of tracks that will be skipped before starting.
-async function pqStart(src, fromId) {
+async function pqStart(src, fromId, nth) {
   const raw = pqSourceIds(src);
   const tracks = raw.map((id) => (id ? trackById(id) : null));
   const playable = tracks.filter((t) => t && pqKind(t));
@@ -6742,7 +6969,10 @@ async function pqStart(src, fromId) {
   const prefs = pqPrefs(); pq.shuffle = prefs.shuffle; pq.repeat = prefs.repeat;
   const first = fromId && pq.ids.includes(fromId) ? fromId : null;
   pq.order = pq.shuffle ? pqShuffled(pq.ids) : pq.ids.slice();
-  if (first) { if (pq.shuffle) pq.order = [first].concat(pq.order.filter((x) => x !== first)); pq.pos = pq.order.indexOf(first); } else pq.pos = 0;
+  if (first) {
+    if (pq.shuffle) { pq.order = [first].concat(pq.order.filter((x) => x !== first)); pq.pos = 0; }
+    else { let k = nth || 0; pq.pos = pq.order.findIndex((x) => x === first && k-- === 0); if (pq.pos < 0) pq.pos = pq.order.indexOf(first); }
+  } else pq.pos = 0;
   if (fromId && !first) toast('That track has no direct link, so the list starts from the next playable track.');
   pqPlayCurrent();
 }
@@ -6919,7 +7149,9 @@ document.addEventListener('click', (e) => {
   if (!b) return;
   e.preventDefault();
   const li = b.closest('li[data-id]');
-  pqStart(b.dataset.pqStart, b.hasAttribute('data-pq-row') && li ? li.dataset.id : null);
+  // A song can be in a playlist twice: count which copy of it this row is.
+  const nth = li ? [...li.parentNode.children].filter((x) => x.dataset.id === li.dataset.id).indexOf(li) : 0;
+  pqStart(b.dataset.pqStart, b.hasAttribute('data-pq-row') && li ? li.dataset.id : null, nth);
 });
 // After a reload: offer to resume (never starts by itself).
 function pqResumeHtml(src) {
@@ -6948,6 +7180,7 @@ document.querySelectorAll('img[data-logo-from]').forEach((img) => { const src = 
 
 // Start-up
 fillSourceSelect($('#form-source'));
+if (dropStaleExports()) saveDb();   // one-time cleanup; also applied after a restore or a sync copy
 renderAll();
 try {
   const v = localStorage.getItem(STORE_KEY + '.view');
