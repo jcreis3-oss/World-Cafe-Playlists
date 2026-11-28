@@ -271,7 +271,36 @@
   table.tracks tbody tr:hover td { background: #fafbfd; }
   table.tracks tbody tr.selected td { background: #f5f6ff; }
   .c-check { width: 44px; padding-left: 22px !important; }
-  .c-num { width: 44px; color: var(--muted); font-size: 0.85rem; }
+  .c-num { width: 52px; color: var(--muted); font-size: 0.85rem; }
+  .c-shownum { width: 64px; color: var(--muted); font-size: 0.85rem; text-align: center; }
+  .lib-n, .show-n { display: none; }
+  /* Find duplicates */
+  .dp-lead { margin-bottom: 4px; }
+  .dp-filters { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0 14px; }
+  .dp-filters button { border: 1px solid var(--border); background: #fff; color: var(--text); border-radius: 999px; padding: 5px 12px; font: inherit; font-weight: 700; font-size: 0.8rem; cursor: pointer; }
+  .dp-filters button.active { background: var(--indigo); border-color: var(--indigo); color: #fff; }
+  .dp-undo { display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; background: var(--amber-soft); border: 1px solid #fcd9a5; border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; font-size: 0.88rem; font-weight: 600; color: #92400e; }
+  .dp-group { border: 1px solid var(--border); border-radius: 12px; margin-bottom: 10px; background: #fbfcfe; }
+  .dp-group > summary { list-style: none; cursor: pointer; padding: 12px 14px; display: flex; gap: 10px; align-items: flex-start; }
+  .dp-group > summary::-webkit-details-marker { display: none; }
+  .dp-group.kept > summary { opacity: 0.7; }
+  .dp-lvl { flex: none; font-size: 0.66rem; font-weight: 800; letter-spacing: 0.05em; border-radius: 6px; padding: 2px 7px; margin-top: 2px; }
+  .dp-lvl.strong { background: #fee2e2; color: #b91c1c; }
+  .dp-lvl.likely { background: var(--amber-soft); color: #b45309; }
+  .dp-lvl.possible { background: var(--pill); color: #475569; }
+  .dp-sum { flex: 1; min-width: 0; }
+  .dp-sum .sub { display: block; font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
+  .dp-sum .kept-note { color: var(--spotify-text); font-weight: 700; }
+  .dp-rows { list-style: none; margin: 0; padding: 0 14px; }
+  .dp-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; padding: 10px 0; border-top: 1px solid var(--border); align-items: start; }
+  .dp-pick { display: flex; flex-direction: column; gap: 6px; font-size: 0.72rem; font-weight: 700; color: var(--muted); padding-top: 2px; }
+  .dp-pick label { display: flex; gap: 5px; align-items: center; cursor: pointer; white-space: nowrap; }
+  .dp-pick input { width: 16px; height: 16px; margin: 0; accent-color: var(--indigo); }
+  .dp-meta { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; font-size: 0.8rem; color: var(--muted); margin-top: 3px; }
+  .dp-meta .status { font-size: 0.8rem; }
+  .dp-tag { font-size: 0.7rem; font-weight: 700; color: var(--indigo); background: #eef2ff; border-radius: 6px; padding: 1px 7px; }
+  .dp-actions { display: flex; gap: 8px; flex-wrap: wrap; padding: 10px 14px 14px; border-top: 1px solid var(--border); }
+  .dp-empty { padding: 18px; text-align: center; color: var(--muted); }
   .c-title .song { font-weight: 700; }
   .c-title .artist { color: #475569; font-size: 0.88rem; }
   .c-title .album { color: var(--faint); font-size: 0.8rem; }
@@ -718,7 +747,11 @@
     table.tracks tbody tr.pl-member td:first-child { box-shadow: none; }
     table.tracks tbody tr.pl-member { box-shadow: inset 4px 0 0 var(--amber), var(--shadow); }
     .c-check { position: absolute; top: 14px; right: 14px; width: auto; padding: 0 !important; }
-    .c-num { display: none !important; }
+    .c-num, .c-shownum { display: none !important; }
+    .lib-n { display: inline; color: var(--muted); font-size: 0.8rem; font-weight: 600; margin-right: 6px; }
+    .show-n { display: inline; color: var(--muted); font-size: 0.8rem; }
+    .dp-row { grid-template-columns: auto minmax(0, 1fr); }
+    .dp-row .dp-edit { grid-column: 2; justify-self: start; }
     .c-title { padding-right: 34px !important; font-size: 1rem; }
     .c-date { display: flex !important; gap: 8px; align-items: center; flex-wrap: wrap; }
     .c-date .meta { margin: 0; }
@@ -763,7 +796,7 @@
     .cc-tools { flex-direction: column; gap: 4px; }
     .cc-all { align-self: flex-end; }
     .panel-actions .btn { padding: 9px 6px; font-size: 0.82rem; gap: 5px; }
-    #btn-add { order: 1; } #btn-add-artist { order: 2; } #btn-resolve { order: 3; grid-column: 1 / -1; }
+    #btn-add { order: 1; } #btn-add-artist { order: 2; } #btn-resolve { order: 3; } #btn-dupes { order: 4; }
     .brand { flex: 1 1 100%; }
     .review-item .vs { grid-template-columns: 1fr; gap: 8px; }
     .rs-grid { grid-template-columns: 1fr; gap: 4px; }
@@ -890,6 +923,7 @@
         <div class="panel-title"><span class="ico" data-icon="filter"></span>Search &amp; Filter Tracks</div>
         <div class="panel-actions">
           <button class="btn btn-outline" id="btn-resolve" title="Find direct Spotify links for tracks still marked Search Query"><span class="ico" data-icon="wand"></span>Resolve links</button>
+          <button class="btn btn-outline" id="btn-dupes" title="Review songs that appear more than once"><span class="ico" data-icon="listMusic"></span>Find duplicates<span class="n"></span></button>
           <button class="btn btn-outline" id="btn-add-artist" title="Start from an artist: look them up on Spotify or YouTube, then add a song"><span class="ico" data-icon="search"></span>Add Song by Artist</button>
           <button class="btn btn-indigo" id="btn-add" title="Add a song that didn't come from an import"><span class="ico" data-icon="plus"></span>Add Song by Name</button>
         </div>
@@ -922,6 +956,8 @@
           <option value="song:asc">Song A–Z</option>
           <option value="artist:asc">Artist A–Z</option>
           <option value="linkStatus:desc">Link status</option>
+          <option value="libnum:asc">Library # (1 first)</option>
+          <option value="libnum:desc">Library # (last first)</option>
         </select>
       </div>
     </div>
@@ -939,13 +975,14 @@
           <thead>
             <tr>
               <th class="c-check"><input type="checkbox" id="chk-all" aria-label="Select all shown tracks"></th>
-              <th class="c-num sortable" data-sort="position">#</th>
+              <th class="c-num sortable" data-sort="libnum" title="Library number: 1 is the newest show's first song">#</th>
               <th class="sortable" data-sort="song">Artist &amp; Song</th>
               <th class="sortable" data-sort="showDate">Show Date</th>
               <th class="sortable" data-sort="type">Type</th>
               <th>Streaming Links</th>
               <th class="sortable" data-sort="linkStatus">Link Status</th>
               <th>Broadcast Notes</th>
+              <th class="c-shownum" title="Order within its show or hourly import">Show #</th>
               <th class="c-actions">Actions</th>
             </tr>
           </thead>
@@ -1273,6 +1310,14 @@
   </div>
 </div>
 
+<!-- Find duplicates (placed before the track dialog so Edit opens on top of it) -->
+<div class="modal-backdrop" id="dupes-modal" role="dialog" aria-modal="true" aria-labelledby="dupes-title">
+  <div class="modal wide">
+    <div class="modal-head"><h2 id="dupes-title" style="display:flex;align-items:center;gap:10px"><span class="ico" data-icon="listMusic"></span>Find duplicates</h2><button type="button" class="close-x" id="dupes-close" aria-label="Close">×</button></div>
+    <div id="dupes-body"></div>
+  </div>
+</div>
+
 <!-- Add Song by Artist -->
 <div class="modal-backdrop" id="artist-modal" role="dialog" aria-modal="true" aria-labelledby="artist-title">
   <form class="modal" id="artist-form" novalidate style="max-width:460px">
@@ -1433,7 +1478,9 @@ function dropStaleExports() {
   return db.youtubeExports.length !== before;
 }
 
+var libNumCache = null, dupeCache = null;   // display caches, rebuilt after any change
 function saveDb() {
+  libNumCache = dupeCache = null;
   try {
     localStorage.setItem(STORE_KEY, JSON.stringify(db));
   } catch (e) {
@@ -1898,6 +1945,18 @@ function scopedTracks() {
 }
 
 function broadcastKey(t) { return t.source + '|' + t.showDate + '|' + (t.airTime || ''); }
+// Library-wide number, display only (stored positions are never changed): 1..N in the default order
+// (show date newest first, then air time, then show position); songs with no show date come last, in the
+// order they were added. Filters keep each song's number; it is recalculated whenever the library changes.
+function defaultOrderVal(t) { return t.showDate + ' ' + (t.airTime || '') + ' ' + String(9999 - (t.position || 0)).padStart(4, '0'); }
+function libNumMap() {
+  if (libNumCache) return libNumCache;
+  const dated = db.tracks.filter((t) => t.showDate).sort((a, b) => { const va = defaultOrderVal(a), vb = defaultOrderVal(b); return va < vb ? 1 : va > vb ? -1 : 0; });
+  const m = new Map();
+  dated.concat(db.tracks.filter((t) => !t.showDate)).forEach((t, i) => m.set(t.id, i + 1));
+  return (libNumCache = m);
+}
+function libNum(t) { return libNumMap().get(t.id) || 0; }
 // User Added songs have no show: they stay out of Show Archives, the show count and import borders.
 function isUserAdded(t) { return t.source === USER_ADDED; }
 // "Thu Nov 19, 2026", or '' for a song with no show date.
@@ -1966,7 +2025,8 @@ function filteredTracks() {
   const { key, dir } = sortState;
   const mul = dir === 'asc' ? 1 : -1;
   const val = (t) => {
-    if (key === 'showDate') return t.showDate + ' ' + (t.airTime || '') + ' ' + String(9999 - (t.position || 0)).padStart(4, '0');
+    if (key === 'showDate') return defaultOrderVal(t);
+    if (key === 'libnum') return String(libNum(t)).padStart(7, '0');
     if (key === 'position') return String(t.position || 0).padStart(4, '0') + ' ' + t.showDate;
     if (key === 'song') return (t.song + ' ' + t.artist).toLowerCase();
     return String(t[key] || '').toLowerCase();
@@ -2014,6 +2074,10 @@ function renderMetricsAndCounts() {
   $('#tc-shows').textContent = shows;
   $('#tc-live').textContent = live;
   $('#tc-creator').textContent = db.selection.length;
+  const dg = dupeGroups();
+  const nStrong = dg.filter((g) => g.level === 'STRONG').length, nLikely = dg.filter((g) => g.level === 'LIKELY').length;
+  $('#btn-dupes .n').textContent = ' (' + nStrong + ')';
+  $('#btn-dupes').title = nStrong + ' strong, ' + nLikely + ' likely, ' + (dg.length - nStrong - nLikely) + ' possible duplicate groups. Opens the review; nothing is deleted until you confirm.';
 }
 
 function trackRowHtml(t, selected, startsImport) {
@@ -2022,15 +2086,17 @@ function trackRowHtml(t, selected, startsImport) {
   const cls = [selected ? 'selected' : '', startsImport ? 'import-start' : '', inPl ? 'pl-member' : ''].filter(Boolean).join(' ');
   return '<tr data-id="' + t.id + '"' + (cls ? ' class="' + cls + '"' : '') + '>' +
     '<td class="c-check"><input type="checkbox" class="row-check" ' + (selected ? 'checked' : '') + ' aria-label="Select ' + escapeHtml(t.song + ' by ' + t.artist) + '"></td>' +
-    '<td class="c-num">' + (t.position || '—') + '</td>' +
-    '<td class="c-title"><div class="song">' + escapeHtml(t.song) + '</div><div class="artist">' + escapeHtml(t.artist) + '</div>' +
+    '<td class="c-num">' + libNum(t) + '</td>' +
+    '<td class="c-title"><div class="song"><span class="lib-n">#' + libNum(t) + '</span>' + escapeHtml(t.song) + '</div><div class="artist">' + escapeHtml(t.artist) + '</div>' +
       (t.album ? '<div class="album">' + escapeHtml(t.album) + '</div>' : '') + inPl + '</td>' +
     '<td class="c-date">' + (showDateLabel(t) ? escapeHtml(showDateLabel(t)) : '<span style="color:var(--faint)" title="No show date">—</span>') +
-      '<div class="meta">' + sourceTag(t.source) + (t.airedAt ? '<span class="air">aired ' + escapeHtml(t.airedAt) + '</span>' : t.airTime ? '<span class="air">' + escapeHtml(t.airTime) + '</span>' : '') + '</div></td>' +
+      '<div class="meta">' + sourceTag(t.source) + (t.airedAt ? '<span class="air">aired ' + escapeHtml(t.airedAt) + '</span>' : t.airTime ? '<span class="air">' + escapeHtml(t.airTime) + '</span>' : '') +
+      (t.position ? '<span class="show-n">Show #' + t.position + '</span>' : '') + '</div></td>' +
     '<td class="c-type">' + typePill + '</td>' +
     '<td class="c-links">' + streamLinks(t) + '</td>' +
     '<td class="c-status">' + statusHtml(t) + '</td>' +
     '<td class="c-notes' + (t.notes ? '' : ' empty') + '">' + (t.notes ? escapeHtml(t.notes) : '<span style="color:var(--faint)">—</span>') + '</td>' +
+    '<td class="c-shownum">' + (t.position || '<span style="color:var(--faint)">—</span>') + '</td>' +
     '<td class="c-actions"><button class="act" data-act="edit">' + icon('pencil') + 'Edit</button>' +
       '<button class="act del" data-act="delete" aria-label="Delete ' + escapeHtml(t.song) + '">' + icon('trash') + '</button></td>' +
     '</tr>';
@@ -2062,9 +2128,9 @@ function renderTable() {
   const sel = new Set(db.selection);
   const body = $('#track-body');
   if (!db.tracks.length) {
-    body.innerHTML = '<tr class="empty-row"><td colspan="9">Your library is empty. Use <b>Import</b> above to load your Sheet CSVs or restore a backup.</td></tr>';
+    body.innerHTML = '<tr class="empty-row"><td colspan="10">Your library is empty. Use <b>Import</b> above to load your Sheet CSVs or restore a backup.</td></tr>';
   } else if (!list.length) {
-    body.innerHTML = '<tr class="empty-row"><td colspan="9">No tracks match your filters.</td></tr>';
+    body.innerHTML = '<tr class="empty-row"><td colspan="10">No tracks match your filters.</td></tr>';
   } else {
     // Import borders only in the unfiltered default view (Show Date, newest first).
     const starts = noFiltersActive() && sortState.key === 'showDate' && sortState.dir === 'desc' ? importStarts(list) : list.map(() => false);
@@ -2488,6 +2554,7 @@ function renderAll() {
   if (db.selection.length !== before) saveDb();
   renderFilterOptions();
   renderTable();
+  if ($('#dupes-modal').classList.contains('open')) renderDupes();
   renderShows();
   renderLive();
   renderCreator();
@@ -2577,6 +2644,231 @@ $('#form-spotify').addEventListener('input', (e) => {
   $('#form-status').value = isDirectSpotify(e.target.value) || spParseInput(e.target.value).id ? VERIFIED : SEARCH;
 });
 
+/* =========================================================
+   Find duplicates: groups songs with the same artist + title + performance type (norm(), as the
+   import duplicate key). Manual only; nothing is deleted until you confirm a group, and nothing about
+   the review is stored. Levels:
+     STRONG   same show date (any source), or the same direct link on the SAME source within 3 days
+              where the two shows share at least 60% of their songs (the re-air test below): the same
+              show listed a day or two off, e.g. the Sheet vs XPN's own playlist. Normal rotation
+              (a song played again a few days later in a different show) stays LIKELY.
+     LIKELY   otherwise, at least one row has a direct link (repeat plays usually share a link)
+     POSSIBLE search links only
+   ========================================================= */
+function dupeKey(t) { return norm(t.artist) + '|' + norm(t.song) + '|' + t.type; }
+function dayDiff(a, b) { return Math.abs((Date.parse(a) - Date.parse(b)) / 864e5); }
+function dupeGroups() {
+  if (dupeCache) return dupeCache;
+  const m = new Map();
+  db.tracks.forEach((t) => { const k = dupeKey(t); if (!m.has(k)) m.set(k, []); m.get(k).push(t); });
+  const sameShow = dupeReairs();
+  const out = [];
+  m.forEach((rows, key) => {
+    if (rows.length < 2) return;
+    const tags = new Map(rows.map((t) => [t.id, new Set()]));
+    let strong = false;
+    for (let i = 0; i < rows.length; i++) for (let j = i + 1; j < rows.length; j++) {
+      const a = rows[i], b = rows[j];
+      const tag = (x) => { tags.get(a.id).add(x); tags.get(b.id).add(x); };
+      const sameDate = !!a.showDate && a.showDate === b.showDate;
+      const sp = !!spTrackId(a) && spTrackId(a) === spTrackId(b);
+      const yt = !!ytVideoId(a.youtubeUrl) && ytVideoId(a.youtubeUrl) === ytVideoId(b.youtubeUrl);
+      if (sameDate) { strong = true; tag(a.source === b.source ? 'Same date' : 'Same date, other source'); }
+      if (sp) tag('Same Spotify track');
+      if (yt) tag('Same YouTube video');
+      if ((sp || yt) && !sameDate && a.source === b.source && a.showDate && b.showDate && dayDiff(a.showDate, b.showDate) <= 3 && sameShow(a, b)) {
+        strong = true; tag('Same show, ' + dayDiff(a.showDate, b.showDate) + ' day' + (dayDiff(a.showDate, b.showDate) === 1 ? '' : 's') + ' apart');
+      }
+    }
+    const direct = (t) => (spTrackId(t) ? 1 : 0) + (ytVideoId(t.youtubeUrl) ? 1 : 0);
+    const level = strong ? 'STRONG' : rows.some((t) => direct(t)) ? 'LIKELY' : 'POSSIBLE';
+    const inPl = (t) => db.playlists.some((p) => p.items.some((i) => i.trackId === t.id));
+    // Suggested keeper: most direct links, then in a saved playlist, then the earliest date (no date last).
+    const keeper = rows.slice().sort((a, b) => direct(b) - direct(a) || inPl(b) - inPl(a) ||
+      (a.showDate || '9999').localeCompare(b.showDate || '9999') || libNum(a) - libNum(b))[0];
+    out.push({ key, level, rows: rows.slice().sort((a, b) => libNum(a) - libNum(b)), tags, keeper: keeper.id, inPlaylists: rows.filter(inPl).length });
+  });
+  const rank = { STRONG: 0, LIKELY: 1, POSSIBLE: 2 };
+  out.sort((a, b) => rank[a.level] - rank[b.level] || b.rows.length - a.rows.length || a.rows[0].song.localeCompare(b.rows[0].song));
+  return (dupeCache = out);
+}
+// Shows that share at least 60% of their songs (the World Cafe import's test): a re-aired show.
+function dupeReairs() {
+  const shows = new Map();
+  db.tracks.forEach((t) => { if (!t.showDate) return; const k = broadcastKey(t); if (!shows.has(k)) shows.set(k, new Set()); shows.get(k).add(norm(t.artist) + '|' + norm(t.song)); });
+  return (a, b) => {
+    const x = shows.get(broadcastKey(a)), y = shows.get(broadcastKey(b));
+    if (!x || !y || x === y || Math.min(x.size, y.size) < 5) return false;
+    let n = 0; x.forEach((k) => { if (y.has(k)) n++; });
+    return n / Math.min(x.size, y.size) >= 0.6;
+  };
+}
+
+// The review run: choices live only while the window is open; undo lasts until the app is reloaded.
+let dp = null;
+let dpUndo = [];   // batches: { tracks: [{ t, index }], items: [{ playlistId, index, prev, keeper }] }
+function dpRowLabel(t) { return '#' + libNum(t) + ' · ' + dateSource(t) + (t.position ? ' · Show #' + t.position : ''); }
+function openDupes() {
+  dp = { filter: 'all', open: new Set(), kept: new Set(), choice: {}, deletedThisRun: 0 };
+  const g = dupeGroups();
+  if (g.length) dp.open.add(g[0].key);
+  renderDupes();
+  $('#dupes-modal').classList.add('open');
+  $('#dupes-modal .modal').scrollTop = 0;
+}
+function closeDupes() {
+  if (!$('#dupes-modal').classList.contains('open')) return;
+  $('#dupes-modal').classList.remove('open');
+  if (dp && dp.deletedThisRun) toast('Deleted ' + dp.deletedThisRun + ' duplicate row' + (dp.deletedThisRun === 1 ? '' : 's') + '. Undo stays in Find duplicates until you reload the app.', 'ok');
+}
+function dpChoice(g) {
+  if (!dp.choice[g.key] || !g.rows.some((t) => t.id === dp.choice[g.key].keeper)) {
+    dp.choice[g.key] = { keeper: g.keeper, del: new Set(g.rows.filter((t) => t.id !== g.keeper).map((t) => t.id)) };
+  }
+  const c = dp.choice[g.key];
+  c.del.forEach((id) => { if (!g.rows.some((t) => t.id === id)) c.del.delete(id); });
+  return c;
+}
+function renderDupes() {
+  if (!dp) return;
+  const box = $('#dupes-body');
+  const scroller = $('#dupes-modal .modal');
+  const keepScroll = scroller.scrollTop;
+  const all = dupeGroups();
+  const reair = dupeReairs();
+  const n = (lvl) => all.filter((g) => g.level === lvl).length;
+  const shown = all.filter((g) => dp.filter === 'all' || g.level === dp.filter);
+  const undoRows = dpUndo.reduce((k, b) => k + b.tracks.length, 0);
+  const lvlCls = (l) => l.toLowerCase();
+  let html = '<p class="dp-lead">Songs that share artist, title and type (live or studio). <b>Strong</b>: same show date, or the same link on the same source within 3 days in two shows that share at least 60% of their songs (one show listed twice). <b>Likely</b>: different dates, with a direct link. <b>Possible</b>: search links only. The same song on different dates is often a genuine repeat play: use <b>Keep all</b> for those. Nothing is deleted until you confirm a group.</p>' +
+    '<div class="dp-filters" role="group" aria-label="Show groups">' +
+    [['all', 'All', all.length], ['STRONG', 'Strong', n('STRONG')], ['LIKELY', 'Likely', n('LIKELY')], ['POSSIBLE', 'Possible', n('POSSIBLE')]]
+      .map(([v, l, c]) => '<button type="button" data-dp-filter="' + v + '"' + (dp.filter === v ? ' class="active" aria-pressed="true"' : ' aria-pressed="false"') + '>' + l + ' (' + c + ')</button>').join('') + '</div>';
+  if (undoRows) html += '<div class="dp-undo"><span>This review deleted ' + undoRows + ' row' + (undoRows === 1 ? '' : 's') + '.</span><button type="button" class="btn btn-outline btn-sm" data-dp-undo>Undo this review\'s deletions</button></div>';
+  if (!shown.length) html += '<div class="dp-empty">' + (all.length ? 'No groups at this level.' : 'No duplicates: every song appears once.') + '</div>';
+  html += shown.map((g) => {
+    const c = dpChoice(g);
+    const kept = dp.kept.has(g.key);
+    const first = g.rows[0];
+    const keeperT = g.rows.find((t) => t.id === g.keeper);
+    const reaired = g.rows.some((a) => g.rows.some((b) => a !== b && reair(a, b)));
+    const delN = g.rows.filter((t) => t.id !== c.keeper && c.del.has(t.id)).length;
+    const name = 'dpk-' + g.key.replace(/[^a-z0-9]+/gi, '-');
+    return '<details class="dp-group' + (kept ? ' kept' : '') + '" data-dp-key="' + escapeHtml(g.key) + '"' + (dp.open.has(g.key) && !kept ? ' open' : '') + '>' +
+      '<summary><span class="dp-lvl ' + lvlCls(g.level) + '">' + g.level + '</span><span class="dp-sum"><b>' + escapeHtml(first.song) + '</b> · ' + escapeHtml(first.artist) +
+        (first.type === LIVE ? ' · ★ live' : '') +
+        '<span class="sub">' + (kept ? '<span class="kept-note">Reviewed: kept all · </span>' : '') + g.rows.length + ' rows · ' + g.inPlaylists + ' in playlists' + (reaired ? ' · From a re-aired show' : '') +
+        ' · Suggested keeper: ' + escapeHtml(dpRowLabel(keeperT)) + '</span></span></summary>' +
+      '<ul class="dp-rows">' + g.rows.map((t) => {
+        const isKeeper = t.id === c.keeper;
+        const tags = [...g.tags.get(t.id)].concat(reaired && g.rows.some((b) => b !== t && reair(t, b)) ? ['From a re-aired show'] : []);
+        return '<li class="dp-row" data-id="' + t.id + '"><div class="dp-pick">' +
+          '<label><input type="radio" name="' + name + '" data-dp-keep="' + t.id + '"' + (isKeeper ? ' checked' : '') + '> Keep</label>' +
+          '<label><input type="checkbox" data-dp-del="' + t.id + '"' + (!isKeeper && c.del.has(t.id) ? ' checked' : '') + (isKeeper ? ' disabled' : '') + '> Delete</label></div>' +
+          '<div><div><b>' + escapeHtml(t.song) + '</b> · ' + escapeHtml(t.artist) + (t.album ? ' <span class="muted small">(' + escapeHtml(t.album) + ')</span>' : '') + '</div>' +
+          '<div class="dp-meta"><span>#' + libNum(t) + '</span>' + sourceTag(t.source) + '<span>' + (showDateLabel(t) ? escapeHtml(showDateLabel(t)) : '—') + '</span>' +
+            '<span>Show #' + (t.position || '—') + '</span>' + statusHtml(t) + tags.map((x) => '<span class="dp-tag">' + escapeHtml(x) + '</span>').join('') + '</div>' +
+          membershipHtml(t.id) + '</div>' +
+          '<button type="button" class="act dp-edit" data-dp-edit="' + t.id + '">' + icon('pencil') + 'Edit</button></li>';
+      }).join('') + '</ul>' +
+      '<div class="dp-actions"><button type="button" class="btn btn-danger btn-sm" data-dp-delete' + (delN ? '' : ' disabled') + '>' + icon('trash') + 'Keep ' + (g.rows.length - delN) + ', delete ' + delN + '</button>' +
+      '<button type="button" class="btn btn-outline btn-sm" data-dp-keepall>Keep all</button></div></details>';
+  }).join('');
+  box.innerHTML = html;
+  scroller.scrollTop = keepScroll;
+}
+// Per source and overall: tracks, shows (as the metric cards count them), verified Spotify, direct YouTube.
+function dpCounts(tracks, sources) {
+  const one = (list) => ({ tracks: list.length, shows: new Set(list.filter((t) => !isUserAdded(t)).map(archiveKey)).size,
+    sp: list.filter((t) => t.linkStatus === VERIFIED).length, yt: list.filter((t) => ytVideoId(t.youtubeUrl)).length });
+  const out = { 'All sources': one(tracks) };
+  sources.forEach((s) => { out[s] = one(tracks.filter((t) => t.source === s)); });
+  return out;
+}
+async function dpDeleteGroup(key) {
+  const g = dupeGroups().find((x) => x.key === key);
+  if (!g) return;
+  const c = dpChoice(g);
+  const keeper = g.rows.find((t) => t.id === c.keeper);
+  const del = g.rows.filter((t) => t.id !== keeper.id && c.del.has(t.id));
+  if (!del.length) return;
+  const delIds = new Set(del.map((t) => t.id));
+  const sources = [...new Set(del.map((t) => t.source))];
+  const before = dpCounts(db.tracks, sources), after = dpCounts(db.tracks.filter((t) => !delIds.has(t.id)), sources);
+  const line = (s) => { const b = before[s], a = after[s], f = (k, l) => l + ' ' + b[k] + (a[k] !== b[k] ? ' → ' + a[k] : ''); return s + ': ' + [f('tracks', 'tracks'), f('shows', 'shows'), f('sp', 'verified Spotify'), f('yt', 'YouTube direct')].join(', '); };
+  const pls = db.playlists.map((p) => ({ p, n: p.items.filter((i) => delIds.has(i.trackId)).length, hasKeeper: p.items.some((i) => i.trackId === keeper.id) })).filter((x) => x.n);
+  const msg = 'Keeping ' + dpRowLabel(keeper) + '.\n\nDeleting:\n' + del.map((t) => '• ' + dpRowLabel(t)).join('\n') +
+    '\n\nCounts (before → after):\n' + sources.concat(['All sources']).map(line).join('\n') +
+    (pls.length ? '\n\nPlaylists: ' + pls.map((x) => '"' + x.p.name + '": ' + x.n + ' entr' + (x.n === 1 ? 'y moves' : 'ies move') + ' to the kept row' + (x.hasKeeper ? ' (it already has the kept row, so it will hold it twice)' : '')).join('; ') + '.' : '') +
+    '\n\nExports are not changed. You can undo this until you reload the app.';
+  const ok = await confirmDialog('Delete ' + del.length + ' of ' + g.rows.length + ' rows?', msg, 'Delete ' + del.length + ' row' + (del.length === 1 ? '' : 's'));
+  if (!ok) return;
+  const batch = { tracks: [], items: [] };
+  db.playlists.forEach((p) => p.items.forEach((it, index) => {
+    if (it.trackId && delIds.has(it.trackId)) { batch.items.push({ playlistId: p.id, index, prev: it.trackId, keeper: keeper.id }); it.trackId = keeper.id; }
+  }));
+  db.tracks.forEach((t, index) => { if (delIds.has(t.id)) batch.tracks.push({ t, index }); });
+  db.tracks = db.tracks.filter((t) => !delIds.has(t.id));
+  dpUndo.push(batch);
+  membershipCache = null;   // playlist entries moved without changing playlist sizes
+  dp.deletedThisRun += del.length;
+  delete dp.choice[key];
+  saveDb();
+  renderAll();
+  toast('Deleted ' + del.length + ' row' + (del.length === 1 ? '' : 's') + ' of "' + keeper.song + '"', 'ok');
+}
+async function dpUndoAll() {
+  const n = dpUndo.reduce((k, b) => k + b.tracks.length, 0);
+  if (!n) return;
+  if (!(await confirmDialog('Undo this review\'s deletions?', 'Puts back the ' + n + ' deleted row' + (n === 1 ? '' : 's') + ' and moves their playlist entries back to them.', 'Undo', true))) return;
+  for (const b of dpUndo.slice().reverse()) {
+    b.items.forEach((x) => { const p = db.playlists.find((q) => q.id === x.playlistId); const it = p && p.items[x.index]; if (it && it.trackId === x.keeper) it.trackId = x.prev; });
+    b.tracks.slice().sort((a, c) => a.index - c.index).forEach(({ t, index }) => { if (!trackById(t.id)) db.tracks.splice(Math.min(index, db.tracks.length), 0, t); });
+  }
+  dpUndo = [];
+  membershipCache = null;
+  if (dp) dp.deletedThisRun = 0;
+  saveDb();
+  renderAll();
+  toast('Put back ' + n + ' row' + (n === 1 ? '' : 's'), 'ok');
+}
+$('#btn-dupes').addEventListener('click', openDupes);
+$('#dupes-close').addEventListener('click', closeDupes);
+$('#dupes-modal').addEventListener('click', (e) => { if (e.target.id === 'dupes-modal') closeDupes(); });
+$('#dupes-body').addEventListener('click', (e) => {
+  const f = e.target.closest('[data-dp-filter]');
+  if (f) { dp.filter = f.dataset.dpFilter; renderDupes(); return; }
+  if (e.target.closest('[data-dp-undo]')) { dpUndoAll(); return; }
+  const ed = e.target.closest('[data-dp-edit]');
+  if (ed) { e.preventDefault(); openTrackModal(trackById(ed.dataset.dpEdit)); return; }
+  const grp = e.target.closest('.dp-group');
+  if (!grp) return;
+  const key = grp.dataset.dpKey;
+  if (e.target.closest('[data-dp-delete]')) { dpDeleteGroup(key); return; }
+  if (e.target.closest('[data-dp-keepall]')) { dp.kept.add(key); dp.open.delete(key); renderDupes(); return; }
+});
+$('#dupes-body').addEventListener('toggle', (e) => {
+  const grp = e.target.closest && e.target.closest('.dp-group');
+  if (!grp || !dp) return;
+  if (grp.open) dp.open.add(grp.dataset.dpKey); else dp.open.delete(grp.dataset.dpKey);
+}, true);
+$('#dupes-body').addEventListener('change', (e) => {
+  const grp = e.target.closest('.dp-group');
+  if (!grp || !dp) return;
+  const g = dupeGroups().find((x) => x.key === grp.dataset.dpKey);
+  if (!g) return;
+  const c = dpChoice(g);
+  if (e.target.dataset.dpKeep) {
+    const old = c.keeper;
+    c.keeper = e.target.dataset.dpKeep;
+    c.del.delete(c.keeper);
+    if (old !== c.keeper) c.del.add(old);
+  } else if (e.target.dataset.dpDel) {
+    if (e.target.checked) c.del.add(e.target.dataset.dpDel); else c.del.delete(e.target.dataset.dpDel);
+  } else return;
+  renderDupes();
+});
+
 /* ---------- Add Song by Artist: look the artist up on Spotify or YouTube, then add a song ---------- */
 const AR_YT_UNITS = 100;   // one search.list call (type=channel)
 let arBusy = false, arSeq = 0;
@@ -2584,8 +2876,8 @@ function arService() { return document.querySelector('input[name="ar-svc"]:check
 function arNotes() {
   $('#ar-sp-note').textContent = spGetToken() ? 'Connected: exact artist lookup.' : 'Not connected on this device: opens Spotify search results instead.';
   $('#ar-yt-note').textContent = db.settings.youtubeApiKey
-    ? 'Each YouTube artist lookup uses ' + AR_YT_UNITS + ' of the daily quota units, the same tally as the resolve runs (' + ytSearchesLeft() + ' left today).'
-    : 'No YouTube key on this device: opens YouTube Music search results instead. (With a key, each lookup uses ' + AR_YT_UNITS + ' of the daily quota units, the same tally as the resolve runs.)';
+    ? 'Each YouTube artist lookup uses 1 of your 100 free YouTube searches per day, the same tally as the resolve runs (' + ytSearchesLeft() + ' left today).'
+    : 'No YouTube key on this device: opens YouTube Music search results instead. (With a key, each lookup uses 1 of your 100 free YouTube searches per day, the same tally as the resolve runs.)';
 }
 function openArtistModal() {
   $('#ar-name').value = '';
@@ -2698,9 +2990,11 @@ $('#import-modal').addEventListener('click', (e) => { if (e.target.id === 'impor
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
   if ($('#confirm-modal').classList.contains('open')) { $('#confirm-cancel').click(); return; }
+  const editing = $('#track-modal').classList.contains('open');
   closeTrackModal();
   closeArtistModal();
   closeImport();
+  if (!editing) closeDupes();
 });
 
 $('#csv-files').addEventListener('change', (e) => handleCsvFiles(e.target.files));
